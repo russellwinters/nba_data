@@ -29,3 +29,7 @@ This is a Python command-line interface (CLI) application that fetches NBA data 
 ## Usage
 
 To run the NBA Data CLI, use the following command:
+
+## Tasks
+
+Check simple [TODO](TODO.md) for task list
