@@ -1,10 +1,9 @@
 from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.static import players
 
-# Find the player ID for a given player name
-player_dict = players.find_players_by_full_name("LeBron James")
-if player_dict:
-    player_id = player_dict[0]['id']
+player = players.find_player_by_id(2544)
+if player:
+    player_id = player['id']
 
     # Fetch the career stats
     career = playercareerstats.PlayerCareerStats(player_id=player_id)
