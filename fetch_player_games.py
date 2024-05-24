@@ -2,7 +2,7 @@ from nba_api.stats.endpoints import playergamelog
 from nba_api.stats.static import players
 
 player = players.find_player_by_id(2544)
-season = '2016'
+season = '2015'
 if player:
     player_id = player['id']
 
