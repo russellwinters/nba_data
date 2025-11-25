@@ -1,94 +1,334 @@
-**Fetch Players**
-- **File**: `fetch_players.py` : Pulls the canonical player list from `nba_api` and writes it to `data/players.csv`.
-- **Purpose**: Fetches all NBA players from `nba_api.stats.static.players.get_players()` and saves the result as a CSV while printing the DataFrame to stdout.
-- **Required args**: None (the script runs `main()` with no args).
-- **How it's called (existing script)**: `python fetch_players.py` — the file calls `main()` at module import, so running the file executes the fetch.
-- **Example (venv)**:
-  - Activate virtualenv: `source venv/bin/activate`
-  - Run: `python fetch_players.py`
-- **Outputs**:
-  - Writes `data/players.csv` (CSV of player records).
-  - Prints the pandas DataFrame representation of all players to stdout.
-  - Possible failures: network errors, `nba_api` rate limiting, missing `data/` directory write-permissions.
+# NBA Data Fetch CLI — Feature Documentation
 
-**Fetch Teams**
-- **File**: `fetch_teams.py` : Pulls the canonical team list from `nba_api` and writes it to `data/teams.csv`.
-- **Purpose**: Fetches all NBA teams from `nba_api.stats.static.teams.get_teams()` and saves the result as a CSV while printing the DataFrame to stdout.
-- **Required args**: None.
-- **How it's called (existing script)**: `python fetch_teams.py` — runs `main()` at module import.
-- **Example (venv)**:
-  - `source venv/bin/activate`
-  - `python fetch_teams.py`
-- **Outputs**:
-  - Writes `data/teams.csv` (CSV of team records).
-  - Prints the pandas DataFrame of teams to stdout.
-  - Possible failures: same as above (network, rate limits, filesystem permissions).
+## Overview
 
-**Fetch Player Career Stats**
-- **File**: `fetch_player_stats.py` : Fetches career statistics for a single player and writes them to CSV.
-- **Purpose**: Uses `nba_api.stats.endpoints.playercareerstats.PlayerCareerStats` to retrieve career stats for a player identified by numeric player ID.
-- **Function signature**: `main(id: int)` — expects an integer NBA player id.
-- **How it's called (existing script)**: The file currently calls `main(2554)` at the bottom, so `python fetch_player_stats.py` will fetch for player id `2554`.
-- **How to call programmatically**: Import and call: `from fetch_player_stats import main; main(201939)` (replace `201939` with desired player id).
-- **Example (venv)**:
-  - `source venv/bin/activate`
-  - `python fetch_player_stats.py` (uses hard-coded `main(2554)` in this repo state)
-- **Outputs**:
-  - Writes `data/{player_id}_career.csv` (e.g., `data/2554_career.csv`) containing the career stats DataFrame.
-  - Prints the career stats DataFrame to stdout.
-  - Returns the pandas DataFrame on success or `None` if player not found.
-  - Possible failures: player id not found (prints "Player not found"), network issues, rate limiting, filesystem write errors.
+The `nba_data` repository provides a unified command-line interface (`fetch.py`) for fetching NBA player, team, and game statistics from the `nba_api` and saving them as CSV files. All functionality is implemented in modular library functions under `lib/` and exposed through a single CLI entry point.
 
-**Fetch Player Game Logs**
-- **File**: `fetch_player_games.py` : Fetches a player's game log for a given season and writes it to CSV.
-- **Purpose**: Uses `nba_api.stats.endpoints.playergamelog.PlayerGameLog` to get per-game data for a player in a season.
-- **Function signature**: `main(id: int, season: str)` — `id` is numeric player id, `season` is a season string (the script uses values like `'2005'`).
-- **How it's called (existing script)**: The file currently calls `main(2544, '2005')` at the bottom, so `python fetch_player_games.py` will fetch that player's 2005 game log.
-- **How to call programmatically**: `from fetch_player_games import main; main(2544, '2019')`.
-- **Example (venv)**:
-  - `source venv/bin/activate`
-  - `python fetch_player_games.py` (runs the hard-coded sample)
-- **Outputs**:
-  - Writes `data/{player_id}_games_{season}.csv` (e.g., `data/2544_games_2005.csv`).
-  - Prints the game log DataFrame to stdout.
-  - Returns the DataFrame on success or `None` (and prints "Player not found") if the player id lookup fails.
-  - Possible failures: invalid player id, network/rate-limit, filesystem errors.
+**Architecture**: The repository uses a two-layer design:
+1. **Library modules** (`lib/fetch_*.py`, `lib/read_stats.py`): Pure functions that perform fetches, accept parameters, and return DataFrames. Each module can be imported and called programmatically or run standalone with its own CLI.
+2. **Unified CLI** (`fetch.py`): A single entry point with subcommands that delegates to library functions, providing consistent argument parsing and error handling across all operations.
 
-**Fetch Team Game Logs**
-- **File**: `fetch_team_games.py` : Fetches a team's game log for a given season and writes it to CSV.
-- **Purpose**: Uses `nba_api.stats.endpoints.teamgamelog.TeamGameLog` with a lookup by abbreviation (e.g., `PHI`) to get team game logs for a season.
-- **Function signature**: `main(id: str, season: str)` — `id` should be a team abbreviation (e.g., `'PHI'`), `season` is a season string.
-- **How it's called (existing script)**: The file currently calls `main('PHI', '2018')` at the bottom; running `python fetch_team_games.py` executes that sample.
-- **How to call programmatically**: `from fetch_team_games import main; main('LAL', '2019')`.
-- **Example (venv)**:
-  - `source venv/bin/activate`
-  - `python fetch_team_games.py`
-- **Outputs**:
-  - Writes `data/team_{team_id}_games_{season}.csv` (team internal id used, e.g., `data/team_1610612755_games_2018.csv`).
-  - Prints the team game log DataFrame to stdout.
-  - Returns the DataFrame on success or `None` (and prints "Player not found") if team lookup fails.
-  - Possible failures: invalid abbreviation (lookup fails), network/rate-limit, filesystem errors.
-
-**Read Stats (CSV viewer)**
-- **File**: `read_stats.py` : Simple CSV viewer that prints a CSV from `data/` to stdout.
-- **Purpose**: Reads a CSV file from the repository `data/` directory and prints it with pandas' `to_string()` for readable console output.
-- **How it's called (CLI)**: `python read_stats.py <filename.csv>` — the script will prepend `data/`, so pass a CSV filename (e.g., `players.csv`).
-- **Example (venv)**:
-  - `source venv/bin/activate`
-  - `python read_stats.py players.csv`  # prints `data/players.csv`
-- **Required args**: One positional argument: filename (must end with `.csv`). If no argument is provided, the script prints `Please provide a filename.` and exits.
-- **Behavior / Outputs**:
-  - On success: prints the CSV contents to stdout using pandas.
-  - If the file doesn't exist: prints `File '<filename>' not found.` (the script attempts to open `data/<filename>`).
-  - If the argument doesn't end with `.csv`: raises `ValueError("Invalid file format. Only CSV files are supported.")`.
-
-**Notes & Environment**
-- **Dependencies**: These scripts use `nba_api` and `pandas`. Ensure your virtual environment has packages installed (see `requirements.txt`).
-- **Network**: `nba_api` calls require network access; you may hit rate limits or experience network errors when fetching.
-- **Data directory**: CSV outputs are written to the repository `data/` directory (ensure it exists and is writable).
-- **Calling with different inputs**: Most scripts define `main(...)` with parameters but call `main(...)` directly at module import with fixed example inputs; to run with different inputs either modify the bottom `main(...)` call or import the `main` function in another script or REPL and pass your arguments.
+**Usage pattern**: `python fetch.py <subcommand> [options]`
 
 ---
 
-References
-- Source scripts in this repo: `fetch_players.py`, `fetch_teams.py`, `fetch_player_stats.py`, `fetch_player_games.py`, `fetch_team_games.py`, `read_stats.py`.
+## Features
+
+### Fetch Players
+
+**Subcommand**: `players`  
+**Library module**: `lib/fetch_players.py` → `fetch_players(output_path='data/players.csv')`
+
+**Purpose**: Fetches all NBA players from `nba_api.stats.static.players.get_players()` and saves the result as a CSV while printing the DataFrame to stdout.
+
+**CLI usage**:
+```bash
+python fetch.py players [--output PATH]
+```
+
+**Options**:
+- `--output`: Output CSV file path (default: `data/players.csv`)
+
+**Examples**:
+```bash
+# Fetch players to default location
+python fetch.py players
+
+# Fetch to custom path
+python fetch.py players --output custom/players_data.csv
+```
+
+**Programmatic usage**:
+```python
+from lib.fetch_players import fetch_players
+df = fetch_players(output_path='data/players.csv')
+```
+
+**Standalone module usage**:
+```bash
+python lib/fetch_players.py --output data/players.csv
+```
+
+**Outputs**:
+- Writes CSV file with player records (columns: id, full_name, first_name, last_name, is_active)
+- Prints DataFrame to stdout
+- Returns DataFrame on success
+
+**Possible failures**: Network errors, `nba_api` rate limiting, missing `data/` directory or write permissions
+
+---
+
+### Fetch Teams
+
+**Subcommand**: `teams`  
+**Library module**: `lib/fetch_teams.py` → `fetch_teams(output_path='data/teams.csv')`
+
+**Purpose**: Fetches all NBA teams from `nba_api.stats.static.teams.get_teams()` and saves the result as a CSV while printing the DataFrame to stdout.
+
+**CLI usage**:
+```bash
+python fetch.py teams [--output PATH]
+```
+
+**Options**:
+- `--output`: Output CSV file path (default: `data/teams.csv`)
+
+**Examples**:
+```bash
+# Fetch teams to default location
+python fetch.py teams
+
+# Fetch to custom path
+python fetch.py teams --output data/nba_teams.csv
+```
+
+**Programmatic usage**:
+```python
+from lib.fetch_teams import fetch_teams
+df = fetch_teams(output_path='data/teams.csv')
+```
+
+**Standalone module usage**:
+```bash
+python lib/fetch_teams.py --output data/teams.csv
+```
+
+**Outputs**:
+- Writes CSV file with team records (columns: id, full_name, abbreviation, nickname, city, state, year_founded)
+- Prints DataFrame to stdout
+- Returns DataFrame on success
+
+**Possible failures**: Network errors, `nba_api` rate limiting, filesystem permissions
+
+---
+
+### Fetch Player Career Stats
+
+**Subcommand**: `player-stats`  
+**Library module**: `lib/fetch_player_stats.py` → `fetch_player_stats(player_id: int, output_path=None)`
+
+**Purpose**: Fetches career statistics for a single player using `nba_api.stats.endpoints.playercareerstats.PlayerCareerStats`.
+
+**CLI usage**:
+```bash
+python fetch.py player-stats --player-id <ID> [--output PATH]
+```
+
+**Required arguments**:
+- `--player-id`: NBA player ID (integer)
+
+**Options**:
+- `--output`: Output CSV file path (default: `data/{player_id}_career.csv`)
+
+**Examples**:
+```bash
+# Fetch career stats for player 2544 (LeBron James)
+python fetch.py player-stats --player-id 2544
+
+# Fetch with custom output path
+python fetch.py player-stats --player-id 201939 --output data/curry_career.csv
+```
+
+**Programmatic usage**:
+```python
+from lib.fetch_player_stats import fetch_player_stats
+df = fetch_player_stats(player_id=2544, output_path='data/lebron_career.csv')
+```
+
+**Standalone module usage**:
+```bash
+python lib/fetch_player_stats.py --player-id 2544 --output data/career.csv
+```
+
+**Outputs**:
+- Writes `data/{player_id}_career.csv` by default (career stats by season)
+- Prints DataFrame to stdout
+- Returns DataFrame on success or `None` if player not found
+
+**Possible failures**: Player ID not found (prints "Player not found"), network issues, rate limiting, filesystem write errors
+
+---
+
+### Fetch Player Game Logs
+
+**Subcommand**: `player-games`  
+**Library module**: `lib/fetch_player_games.py` → `fetch_player_games(player_id: int, season: str, output_path=None)`
+
+**Purpose**: Fetches a player's per-game statistics for a specific season using `nba_api.stats.endpoints.playergamelog.PlayerGameLog`.
+
+**CLI usage**:
+```bash
+python fetch.py player-games --player-id <ID> --season <SEASON> [--output PATH]
+```
+
+**Required arguments**:
+- `--player-id`: NBA player ID (integer)
+- `--season`: Season string (e.g., `"2005"`, `"2022-23"`)
+
+**Options**:
+- `--output`: Output CSV file path (default: `data/{player_id}_games_{season}.csv`)
+
+**Examples**:
+```bash
+# Fetch game log for player 2544 in 2022-23 season
+python fetch.py player-games --player-id 2544 --season 2022-23
+
+# Fetch with custom output
+python fetch.py player-games --player-id 201939 --season 2019 --output data/curry_2019.csv
+```
+
+**Programmatic usage**:
+```python
+from lib.fetch_player_games import fetch_player_games
+df = fetch_player_games(player_id=2544, season='2022-23')
+```
+
+**Standalone module usage**:
+```bash
+python lib/fetch_player_games.py --player-id 2544 --season 2022-23
+```
+
+**Outputs**:
+- Writes `data/{player_id}_games_{season}.csv` by default (game-by-game stats)
+- Prints DataFrame to stdout
+- Returns DataFrame on success or `None` if player not found
+
+**Possible failures**: Invalid player ID, network/rate-limit errors, filesystem errors
+
+---
+
+### Fetch Team Game Logs
+
+**Subcommand**: `team-games`  
+**Library module**: `lib/fetch_team_games.py` → `fetch_team_games(team_id: str, season: str, output_path=None)`
+
+**Purpose**: Fetches a team's game log for a specific season using `nba_api.stats.endpoints.teamgamelog.TeamGameLog`. Team lookup is by abbreviation (e.g., `PHI`, `LAL`).
+
+**CLI usage**:
+```bash
+python fetch.py team-games --team-id <ABBREVIATION> --season <SEASON> [--output PATH]
+```
+
+**Required arguments**:
+- `--team-id`: NBA team abbreviation (string, e.g., `"PHI"`, `"LAL"`, `"BOS"`)
+- `--season`: Season string (e.g., `"2018"`, `"2022-23"`)
+
+**Options**:
+- `--output`: Output CSV file path (default: `data/team_{internal_team_id}_games_{season}.csv`)
+
+**Examples**:
+```bash
+# Fetch game log for Philadelphia 76ers in 2018
+python fetch.py team-games --team-id PHI --season 2018
+
+# Fetch Lakers 2022-23 with custom output
+python fetch.py team-games --team-id LAL --season 2022-23 --output data/lakers_2023.csv
+```
+
+**Programmatic usage**:
+```python
+from lib.fetch_team_games import fetch_team_games
+df = fetch_team_games(team_id='PHI', season='2018')
+```
+
+**Standalone module usage**:
+```bash
+python lib/fetch_team_games.py --team-id LAL --season 2022-23
+```
+
+**Outputs**:
+- Writes `data/team_{team_id}_games_{season}.csv` by default (using internal numeric team ID)
+- Prints DataFrame to stdout
+- Returns DataFrame on success or `None` if team abbreviation not found
+
+**Possible failures**: Invalid team abbreviation (prints "Team not found"), network/rate-limit errors, filesystem errors
+
+---
+
+### Read Stats (CSV Viewer)
+
+**Subcommand**: `read-stats`  
+**Library module**: `lib/read_stats.py` → `read_stats(filename, data_dir='data')`
+
+**Purpose**: Reads and displays a CSV file from the `data/` directory (or custom directory) using pandas' `to_string()` for readable console output.
+
+**CLI usage**:
+```bash
+python fetch.py read-stats <FILENAME> [--data-dir PATH]
+```
+
+**Required arguments**:
+- `filename`: Name of the CSV file to read (must end with `.csv`)
+
+**Options**:
+- `--data-dir`: Directory where the file is located (default: `data`)
+
+**Examples**:
+```bash
+# Read players CSV from default data/ directory
+python fetch.py read-stats players.csv
+
+# Read from custom directory
+python fetch.py read-stats teams.csv --data-dir custom_data/
+```
+
+**Programmatic usage**:
+```python
+from lib.read_stats import read_stats
+df = read_stats(filename='players.csv', data_dir='data')
+```
+
+**Standalone module usage**:
+```bash
+python lib/read_stats.py players.csv --data-dir data
+```
+
+**Outputs**:
+- Prints CSV contents to stdout (formatted with pandas)
+- Returns DataFrame on success or `None` if file not found
+
+**Validation**:
+- Raises `ValueError` if filename doesn't end with `.csv`
+- Prints `"File '<filename>' not found in '<data_dir>' directory."` if file doesn't exist
+
+---
+
+## Environment & Dependencies
+
+**Virtual environment setup**:
+```bash
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On macOS/Linux
+# venv\Scripts\activate   # On Windows
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+**Dependencies**: 
+- `nba_api`: Provides NBA statistics endpoints
+- `pandas`: Data manipulation and CSV operations
+
+**Network requirements**: All fetch operations require network access to NBA Stats API. You may encounter rate limits or network errors during fetching.
+
+**File system**: CSV outputs are written to the `data/` directory by default (ensure it exists and is writable).
+
+---
+
+## References
+
+**Library modules**:
+- `lib/fetch_players.py`: Player list fetching[1]
+- `lib/fetch_teams.py`: Team list fetching[1]
+- `lib/fetch_player_stats.py`: Player career statistics[1]
+- `lib/fetch_player_games.py`: Player game logs[1]
+- `lib/fetch_team_games.py`: Team game logs[1]
+- `lib/read_stats.py`: CSV file reader[1]
+
+**Unified CLI**: `fetch.py`: Single entry point with subcommand architecture[1]
+
+---
+
+[1] Source files in this repository: `/Users/russellwinters/Developer/projects/nba_data/`
+

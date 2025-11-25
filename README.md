@@ -62,26 +62,75 @@ deactivate                  # exit the venv when finished
 
 ## Usage
 
-To run the NBA Data CLI, activate the venv and use simple commands, like:
+The NBA Data CLI provides a unified `fetch.py` command with subcommands for all data fetching and reading operations.
+
+### Basic Command Structure
 
 ```zsh
-python fetch_players.py
+python fetch.py <subcommand> [options]
+```
+
+### Available Subcommands
+
+- `players` — Fetch all NBA players and save to CSV
+- `teams` — Fetch all NBA teams and save to CSV
+- `player-games` — Fetch a player's game log for a specific season
+- `team-games` — Fetch a team's game log for a specific season
+- `player-stats` — Fetch a player's career statistics
+- `read-stats` — Read and display a CSV file containing NBA statistics
+
+### Examples
+
+**Get help:**
+```zsh
+python fetch.py --help                    # See all subcommands
+python fetch.py players --help            # Help for a specific subcommand
+```
+
+**Fetch all players:**
+```zsh
+python fetch.py players --output data/players.csv
+```
+
+**Fetch all teams:**
+```zsh
+python fetch.py teams --output data/teams.csv
+```
+
+**Fetch player game logs:**
+```zsh
+python fetch.py player-games --player-id 2544 --season 2022-23
+```
+
+**Fetch team game logs:**
+```zsh
+python fetch.py team-games --team-id LAL --season 2022-23
+```
+
+**Fetch player career stats:**
+```zsh
+python fetch.py player-stats --player-id 2544
+```
+
+**Read saved stats:**
+```zsh
+python fetch.py read-stats players.csv
 ```
 ## Tasks
 
 Check simple [TODO](TODO.md) for task list
 
 
-## Current Methods:
+## Project Structure
 
-- **Script —** `fetch_players.py`: Fetches player roster data from an external NBA API, prints a brief summary to stdout, and writes player records to a local CSV (typically `data/players.csv`). Use this to build or refresh the local players dataset.
-- **Script —** `fetch_teams.py`: Retrieves team information from the API, prints the results, and can write or update local CSVs with team metadata. Useful for keeping a local reference of teams and their attributes.
-- **Script —** `fetch_player_stats.py`: Requests per-player aggregated statistics (season or career level) from the API, prints or returns those stats, and can export them to CSV for analysis.
-- **Script —** `fetch_player_games.py`: Downloads game-level data for a specified player (individual game logs), prints sample rows, and can convert or append the game logs to local CSV files for time-series analysis.
-- **Script —** `fetch_team_games.py`: Fetches game logs or schedule/results for a specified team, prints key fields, and can save the team game data to CSV for team-level analyses.
-- **Utility —** `read_stats.py`: Reads previously saved CSV data (players, teams, stats, or game logs), prints human-readable summaries or filtered views, and helps inspect or validate locally stored datasets.
+The project uses a modular architecture with all core functionality in the `lib/` directory:
 
-Notes:
-- The descriptions above are concise summaries of each runnable script in the project root. For exact parameters, flags, and outputs, open the corresponding script file (for example, `fetch_players.py`) and review its argument parsing and docstring.
+- **`fetch.py`** — Unified CLI entrypoint exposing all fetching and reading operations via subcommands
+- **`lib/fetch_players.py`** — Player roster data fetching
+- **`lib/fetch_teams.py`** — Team information retrieval
+- **`lib/fetch_player_stats.py`** — Player career statistics
+- **`lib/fetch_player_games.py`** — Player game-level logs
+- **`lib/fetch_team_games.py`** — Team game-level logs
+- **`lib/read_stats.py`** — CSV data reading and display utility
 
-
+More detailed feature descriptions can be found on the [Features Doc](./docs/features.md)
