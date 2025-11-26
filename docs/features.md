@@ -197,7 +197,7 @@ python lib/fetch_player_games.py --player-id 2544 --season 2022-23
 
 ---
 
-### Fetch Team Game Logs
+### Fetch Team Games
 
 **Subcommand**: `team-games`  
 **Library module**: `lib/fetch_team_games.py` → `fetch_team_games(team_id: str, season: str, output_path=None)`
@@ -242,6 +242,63 @@ python lib/fetch_team_games.py --team-id LAL --season 2022-23
 - Returns DataFrame on success or `None` if team abbreviation not found
 
 **Possible failures**: Invalid team abbreviation (prints "Team not found"), network/rate-limit errors, filesystem errors
+
+---
+
+### Fetch Team Game Logs
+
+**Subcommand**: `team-game-logs`  
+**Library module**: `lib/fetch_team_game_logs.py` → `fetch_team_game_logs(team_id, season=None, *, season_type=None, timeout=30, proxy=None, headers=None, get_request=True, output_path=None)`
+
+**Purpose**: Fetches a team's filtered game logs using `nba_api.stats.endpoints.teamgamelog.TeamGameLogs`. The wrapper accepts a flexible `team_id` (numeric internal id, abbreviation like `LAL`, or full team name) and optionally forwards `season` to the endpoint as `season_nullable` and `season_type` where provided. The `output_path` parameter is optional; when omitted the wrapper computes a sensible default CSV path and still writes the DataFrame to disk.
+
+**CLI usage**:
+```bash
+python fetch.py team-game-logs --team-id <ID|ABBREVIATION|NAME> [--season <SEASON>] [--season-type <TYPE>] [--output PATH]
+```
+
+**Required arguments**:
+- `--team-id`: Team identifier — numeric id, abbreviation (e.g., `LAL`), or full team name
+
+**Options**:
+- `--season`: Season string (e.g., `"2018"`, `"2022-23"`). Optional; forwarded to the endpoint as `season_nullable`
+- `--season-type`: Optional season type forwarded to the endpoint (e.g., `"Regular Season"`)
+- `--output`: Output CSV file path (optional). If omitted the wrapper will compute a default path (for example: `data/team_{ABBR_or_id}_games_{season}.csv`) and write the CSV there.
+
+**Examples**:
+```bash
+# Fetch Lakers 2022-23 game logs by abbreviation (writes to default path)
+python fetch.py team-game-logs --team-id LAL --season 2022-23
+
+# Fetch by numeric internal team id and save with season-type to a custom path
+python fetch.py team-game-logs --team-id 1610612747 --season 2022-23 --season-type "Regular Season" --output data/lakers_2023_logs.csv
+
+# Fetch without season (season is optional)
+python fetch.py team-game-logs --team-id PHI
+```
+
+**Programmatic usage**:
+```python
+from lib.fetch_team_game_logs import fetch_team_game_logs
+
+# By abbreviation; omitting output_path writes to a default CSV path
+df = fetch_team_game_logs(team_id='LAL', season='2022-23')
+
+# Explicitly provide an output path if you want a custom location
+df = fetch_team_game_logs(team_id=1610612747, output_path='data/lakers_2023_logs.csv')
+```
+
+**Standalone module usage**:
+```bash
+python lib/fetch_team_game_logs.py --team-id LAL --season 2022-23 --season-type "Regular Season" [--output data/custom.csv]
+```
+
+**Outputs**:
+- Returns a `pandas.DataFrame` containing the filtered game logs
+- The wrapper writes a CSV to disk: if `output_path`/`--output` is provided it writes there; if omitted it computes and writes to a default path (e.g., `data/team_{ABBR_or_id}_games_{season}.csv`)
+- Returns an empty DataFrame for invalid inputs (the wrapper is tolerant and uses empty DataFrames to indicate no data)
+
+**Possible failures**: Invalid `team_id` (ValueError or empty DataFrame), network/rate-limit errors, filesystem/write errors
 
 ---
 
