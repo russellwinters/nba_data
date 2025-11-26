@@ -10,8 +10,6 @@ This document describes the data structures returned by the NBA Data CLI command
   - [Players](#players)
   - [Teams](#teams)
   - [Player Game Logs](#player-game-logs)
-  - [Team Game Logs](#team-game-logs)
-  - [Team Game Logs (Extended)](#team-game-logs-extended)
   - [Player Career Stats](#player-career-stats)
 
 ---
@@ -40,20 +38,20 @@ The NBA Data CLI fetches data from the NBA Stats API and outputs CSV files. This
 │ is_active   │         │ city                │
 └──────┬──────┘         │ state               │
        │                │ year_founded        │
-       │                └──────────┬──────────┘
-       │                           │
-       ▼                           ▼
-┌──────────────────────┐   ┌──────────────────────┐
-│  Player Game Logs    │   │   Team Game Logs     │
-├──────────────────────┤   ├──────────────────────┤
-│ PK: (Player_ID,      │   │ PK: (Team_ID,        │
-│      Game_ID)        │   │      Game_ID)        │
-│ FK: Player_ID        │   │ FK: Team_ID          │
-│ SEASON_ID            │   │ GAME_DATE            │
-│ GAME_DATE            │   │ MATCHUP              │
-│ MATCHUP              │   │ WL                   │
-│ Stats columns...     │   │ Stats columns...     │
-└──────────────────────┘   └──────────────────────┘
+       │                └─────────────────────┘
+       │
+       ▼
+┌──────────────────────┐
+│  Player Game Logs    │
+├──────────────────────┤
+│ PK: (Player_ID,      │
+│      Game_ID)        │
+│ FK: Player_ID        │
+│ SEASON_ID            │
+│ GAME_DATE            │
+│ MATCHUP              │
+│ Stats columns...     │
+└──────────────────────┘
        │
        ▼
 ┌──────────────────────┐
@@ -238,223 +236,6 @@ CREATE INDEX idx_player_game_logs_player ON player_game_logs(Player_ID);
 
 ---
 
-### Team Game Logs
-
-**CLI Command:** `python fetch.py team-games --team-id <ABBREVIATION> --season <SEASON>`
-
-**Description:** Contains per-game statistics for a specific team during a given season. Each row represents one game played by the team.
-
-#### Schema
-
-| Column      | SQL Type       | Nullable | Description                                          |
-|-------------|----------------|----------|------------------------------------------------------|
-| `Team_ID`   | INTEGER        | NOT NULL | **Foreign Key** to `teams.id`                        |
-| `Game_ID`   | VARCHAR(10)    | NOT NULL | Unique game identifier                               |
-| `GAME_DATE` | DATE           | NOT NULL | Date the game was played                             |
-| `MATCHUP`   | VARCHAR(20)    | NOT NULL | Game matchup (e.g., "LAL vs. GSW" or "LAL @ BOS")    |
-| `WL`        | CHAR(1)        | NULL     | Win/Loss indicator ("W" or "L")                      |
-| `W`         | INTEGER        | NULL     | Cumulative wins in the season                        |
-| `L`         | INTEGER        | NULL     | Cumulative losses in the season                      |
-| `W_PCT`     | DECIMAL(5,3)   | NULL     | Win percentage                                       |
-| `MIN`       | INTEGER        | NULL     | Total minutes played by team                         |
-| `FGM`       | INTEGER        | NULL     | Field goals made                                     |
-| `FGA`       | INTEGER        | NULL     | Field goals attempted                                |
-| `FG_PCT`    | DECIMAL(5,3)   | NULL     | Field goal percentage                                |
-| `FG3M`      | INTEGER        | NULL     | Three-point field goals made                         |
-| `FG3A`      | INTEGER        | NULL     | Three-point field goals attempted                    |
-| `FG3_PCT`   | DECIMAL(5,3)   | NULL     | Three-point field goal percentage                    |
-| `FTM`       | INTEGER        | NULL     | Free throws made                                     |
-| `FTA`       | INTEGER        | NULL     | Free throws attempted                                |
-| `FT_PCT`    | DECIMAL(5,3)   | NULL     | Free throw percentage                                |
-| `OREB`      | INTEGER        | NULL     | Offensive rebounds                                   |
-| `DREB`      | INTEGER        | NULL     | Defensive rebounds                                   |
-| `REB`       | INTEGER        | NULL     | Total rebounds                                       |
-| `AST`       | INTEGER        | NULL     | Assists                                              |
-| `STL`       | INTEGER        | NULL     | Steals                                               |
-| `BLK`       | INTEGER        | NULL     | Blocks                                               |
-| `TOV`       | INTEGER        | NULL     | Turnovers                                            |
-| `PF`        | INTEGER        | NULL     | Personal fouls                                       |
-| `PTS`       | INTEGER        | NULL     | Points scored                                        |
-
-#### SQL DDL
-
-```sql
-CREATE TABLE team_game_logs (
-    Team_ID     INTEGER       NOT NULL,
-    Game_ID     VARCHAR(10)   NOT NULL,
-    GAME_DATE   DATE          NOT NULL,
-    MATCHUP     VARCHAR(20)   NOT NULL,
-    WL          CHAR(1),
-    W           INTEGER,
-    L           INTEGER,
-    W_PCT       DECIMAL(5,3),
-    MIN         INTEGER,
-    FGM         INTEGER,
-    FGA         INTEGER,
-    FG_PCT      DECIMAL(5,3),
-    FG3M        INTEGER,
-    FG3A        INTEGER,
-    FG3_PCT     DECIMAL(5,3),
-    FTM         INTEGER,
-    FTA         INTEGER,
-    FT_PCT      DECIMAL(5,3),
-    OREB        INTEGER,
-    DREB        INTEGER,
-    REB         INTEGER,
-    AST         INTEGER,
-    STL         INTEGER,
-    BLK         INTEGER,
-    TOV         INTEGER,
-    PF          INTEGER,
-    PTS         INTEGER,
-    PRIMARY KEY (Team_ID, Game_ID),
-    FOREIGN KEY (Team_ID) REFERENCES teams(id)
-);
-
-CREATE INDEX idx_team_game_logs_date ON team_game_logs(GAME_DATE);
-CREATE INDEX idx_team_game_logs_team ON team_game_logs(Team_ID);
-```
-
----
-
-### Team Game Logs (Extended)
-
-**CLI Command:** `python fetch.py team-game-logs --team-id <ID|ABBREVIATION|NAME> [--season <SEASON>] [--season-type <TYPE>]`
-
-**Description:** Extended team game logs with additional fields including ranking information. This endpoint provides more flexible filtering options and additional statistical rankings.
-
-#### Schema
-
-| Column              | SQL Type       | Nullable | Description                                          |
-|---------------------|----------------|----------|------------------------------------------------------|
-| `SEASON_YEAR`       | VARCHAR(10)    | NOT NULL | Season identifier (e.g., "2022-23")                  |
-| `TEAM_ID`           | INTEGER        | NOT NULL | **Foreign Key** to `teams.id`                        |
-| `TEAM_ABBREVIATION` | CHAR(3)        | NOT NULL | Three-letter team abbreviation                       |
-| `TEAM_NAME`         | VARCHAR(50)    | NOT NULL | Full team name                                       |
-| `GAME_ID`           | VARCHAR(10)    | NOT NULL | Unique game identifier                               |
-| `GAME_DATE`         | DATE           | NOT NULL | Date the game was played                             |
-| `MATCHUP`           | VARCHAR(20)    | NOT NULL | Game matchup                                         |
-| `WL`                | CHAR(1)        | NULL     | Win/Loss indicator                                   |
-| `MIN`               | INTEGER        | NULL     | Minutes played                                       |
-| `FGM`               | INTEGER        | NULL     | Field goals made                                     |
-| `FGA`               | INTEGER        | NULL     | Field goals attempted                                |
-| `FG_PCT`            | DECIMAL(5,3)   | NULL     | Field goal percentage                                |
-| `FG3M`              | INTEGER        | NULL     | Three-point field goals made                         |
-| `FG3A`              | INTEGER        | NULL     | Three-point field goals attempted                    |
-| `FG3_PCT`           | DECIMAL(5,3)   | NULL     | Three-point field goal percentage                    |
-| `FTM`               | INTEGER        | NULL     | Free throws made                                     |
-| `FTA`               | INTEGER        | NULL     | Free throws attempted                                |
-| `FT_PCT`            | DECIMAL(5,3)   | NULL     | Free throw percentage                                |
-| `OREB`              | INTEGER        | NULL     | Offensive rebounds                                   |
-| `DREB`              | INTEGER        | NULL     | Defensive rebounds                                   |
-| `REB`               | INTEGER        | NULL     | Total rebounds                                       |
-| `AST`               | INTEGER        | NULL     | Assists                                              |
-| `TOV`               | INTEGER        | NULL     | Turnovers                                            |
-| `STL`               | INTEGER        | NULL     | Steals                                               |
-| `BLK`               | INTEGER        | NULL     | Blocks                                               |
-| `BLKA`              | INTEGER        | NULL     | Blocked attempts (shots blocked by opponent)         |
-| `PF`                | INTEGER        | NULL     | Personal fouls                                       |
-| `PFD`               | INTEGER        | NULL     | Personal fouls drawn                                 |
-| `PTS`               | INTEGER        | NULL     | Points scored                                        |
-| `PLUS_MINUS`        | INTEGER        | NULL     | Plus/minus rating                                    |
-| `GP_RANK`           | INTEGER        | NULL     | Games played rank                                    |
-| `W_RANK`            | INTEGER        | NULL     | Wins rank                                            |
-| `L_RANK`            | INTEGER        | NULL     | Losses rank                                          |
-| `W_PCT_RANK`        | INTEGER        | NULL     | Win percentage rank                                  |
-| `MIN_RANK`          | INTEGER        | NULL     | Minutes rank                                         |
-| `FGM_RANK`          | INTEGER        | NULL     | Field goals made rank                                |
-| `FGA_RANK`          | INTEGER        | NULL     | Field goals attempted rank                           |
-| `FG_PCT_RANK`       | INTEGER        | NULL     | Field goal percentage rank                           |
-| `FG3M_RANK`         | INTEGER        | NULL     | Three-point field goals made rank                    |
-| `FG3A_RANK`         | INTEGER        | NULL     | Three-point field goals attempted rank               |
-| `FG3_PCT_RANK`      | INTEGER        | NULL     | Three-point field goal percentage rank               |
-| `FTM_RANK`          | INTEGER        | NULL     | Free throws made rank                                |
-| `FTA_RANK`          | INTEGER        | NULL     | Free throws attempted rank                           |
-| `FT_PCT_RANK`       | INTEGER        | NULL     | Free throw percentage rank                           |
-| `OREB_RANK`         | INTEGER        | NULL     | Offensive rebounds rank                              |
-| `DREB_RANK`         | INTEGER        | NULL     | Defensive rebounds rank                              |
-| `REB_RANK`          | INTEGER        | NULL     | Total rebounds rank                                  |
-| `AST_RANK`          | INTEGER        | NULL     | Assists rank                                         |
-| `TOV_RANK`          | INTEGER        | NULL     | Turnovers rank                                       |
-| `STL_RANK`          | INTEGER        | NULL     | Steals rank                                          |
-| `BLK_RANK`          | INTEGER        | NULL     | Blocks rank                                          |
-| `BLKA_RANK`         | INTEGER        | NULL     | Blocked attempts rank                                |
-| `PF_RANK`           | INTEGER        | NULL     | Personal fouls rank                                  |
-| `PFD_RANK`          | INTEGER        | NULL     | Personal fouls drawn rank                            |
-| `PTS_RANK`          | INTEGER        | NULL     | Points rank                                          |
-| `PLUS_MINUS_RANK`   | INTEGER        | NULL     | Plus/minus rank                                      |
-
-#### SQL DDL
-
-```sql
-CREATE TABLE team_game_logs_extended (
-    SEASON_YEAR       VARCHAR(10)   NOT NULL,
-    TEAM_ID           INTEGER       NOT NULL,
-    TEAM_ABBREVIATION CHAR(3)       NOT NULL,
-    TEAM_NAME         VARCHAR(50)   NOT NULL,
-    GAME_ID           VARCHAR(10)   NOT NULL,
-    GAME_DATE         DATE          NOT NULL,
-    MATCHUP           VARCHAR(20)   NOT NULL,
-    WL                CHAR(1),
-    MIN               INTEGER,
-    FGM               INTEGER,
-    FGA               INTEGER,
-    FG_PCT            DECIMAL(5,3),
-    FG3M              INTEGER,
-    FG3A              INTEGER,
-    FG3_PCT           DECIMAL(5,3),
-    FTM               INTEGER,
-    FTA               INTEGER,
-    FT_PCT            DECIMAL(5,3),
-    OREB              INTEGER,
-    DREB              INTEGER,
-    REB               INTEGER,
-    AST               INTEGER,
-    TOV               INTEGER,
-    STL               INTEGER,
-    BLK               INTEGER,
-    BLKA              INTEGER,
-    PF                INTEGER,
-    PFD               INTEGER,
-    PTS               INTEGER,
-    PLUS_MINUS        INTEGER,
-    GP_RANK           INTEGER,
-    W_RANK            INTEGER,
-    L_RANK            INTEGER,
-    W_PCT_RANK        INTEGER,
-    MIN_RANK          INTEGER,
-    FGM_RANK          INTEGER,
-    FGA_RANK          INTEGER,
-    FG_PCT_RANK       INTEGER,
-    FG3M_RANK         INTEGER,
-    FG3A_RANK         INTEGER,
-    FG3_PCT_RANK      INTEGER,
-    FTM_RANK          INTEGER,
-    FTA_RANK          INTEGER,
-    FT_PCT_RANK       INTEGER,
-    OREB_RANK         INTEGER,
-    DREB_RANK         INTEGER,
-    REB_RANK          INTEGER,
-    AST_RANK          INTEGER,
-    TOV_RANK          INTEGER,
-    STL_RANK          INTEGER,
-    BLK_RANK          INTEGER,
-    BLKA_RANK         INTEGER,
-    PF_RANK           INTEGER,
-    PFD_RANK          INTEGER,
-    PTS_RANK          INTEGER,
-    PLUS_MINUS_RANK   INTEGER,
-    PRIMARY KEY (TEAM_ID, GAME_ID),
-    FOREIGN KEY (TEAM_ID) REFERENCES teams(id)
-);
-
-CREATE INDEX idx_team_game_logs_ext_season ON team_game_logs_extended(SEASON_YEAR);
-CREATE INDEX idx_team_game_logs_ext_date ON team_game_logs_extended(GAME_DATE);
-CREATE INDEX idx_team_game_logs_ext_team ON team_game_logs_extended(TEAM_ID);
-```
-
----
-
 ### Player Career Stats
 
 **CLI Command:** `python fetch.py player-stats --player-id <ID>`
@@ -558,16 +339,11 @@ CREATE INDEX idx_player_career_stats_team ON player_career_stats(TEAM_ID);
 | AST          | Assists                        | Passes leading to scores                       |
 | STL          | Steals                         | Turnovers forced from opponents                |
 | BLK          | Blocks                         | Opponent shots blocked                         |
-| BLKA         | Blocked Attempts               | Own shots blocked by opponents                 |
 | TOV          | Turnovers                      | Ball lost to opponents                         |
 | PF           | Personal Fouls                 | Fouls committed                                |
-| PFD          | Personal Fouls Drawn           | Fouls drawn from opponents                     |
 | PTS          | Points                         | Total points scored                            |
 | PLUS_MINUS   | Plus/Minus                     | Point differential while on court              |
 | WL           | Win/Loss                       | Game result indicator                          |
-| W            | Wins                           | Cumulative wins                                |
-| L            | Losses                         | Cumulative losses                              |
-| W_PCT        | Win Percentage                 | W / (W + L)                                    |
 
 ---
 
