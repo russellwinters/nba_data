@@ -1,0 +1,243 @@
+#!/usr/bin/env python3
+"""Fetch team game box scores using `nba_api.stats.endpoints.leaguegamefinder.LeagueGameFinder`.
+
+This module provides a wrapper around the NBA API endpoint to find games for a
+team within a date range and returns a `pandas.DataFrame` for downstream processing.
+
+Example:
+    from lib.fetch_team_box_scores import fetch_team_games
+
+    df = fetch_team_games('LAL', date_from='2024-07-01', date_to='2025-07-01')
+
+CLI Usage:
+    python lib/fetch_team_box_scores.py --team-id LAL --date-from 2024-07-01 --date-to 2025-07-01
+    python lib/fetch_team_box_scores.py --team-id LAL --date 2024-01-15
+    python lib/fetch_team_box_scores.py --team-id LAL --season 2023-24
+"""
+import argparse
+import os
+from datetime import datetime
+from typing import Any, Optional
+
+import pandas as pd
+
+from nba_api.stats.endpoints import leaguegamefinder
+from nba_api.stats.static import teams
+
+
+# Default output path for CSV files
+DEFAULT_OUTPUT_PATH = "data/demo_boxscores.csv"
+
+
+def _normalize_team_id(team_id: Any) -> Optional[int]:
+    """
+    Resolve a team identifier to a numeric team ID.
+
+    Args:
+        team_id: Team ID (int), abbreviation (e.g., 'LAL'), or team name
+
+    Returns:
+        Numeric team ID or None if not found
+    """
+    if team_id is None:
+        return None
+
+    # Already numeric
+    if isinstance(team_id, int):
+        return team_id
+
+    # Numeric string
+    if isinstance(team_id, str) and team_id.isdigit():
+        return int(team_id)
+
+    # Try abbreviation
+    if isinstance(team_id, str):
+        team_abbr = team_id.strip().upper()
+        found = teams.find_team_by_abbreviation(team_abbr)
+        if found:
+            return found["id"]
+
+        # Try full name
+        try:
+            found = teams.find_team_by_full_name(team_id.strip())
+            if found:
+                return found["id"]
+        except Exception:
+            pass
+
+    return None
+
+
+def _format_date_nba(date_str: str) -> str:
+    """
+    Convert date string to NBA API format (MM/DD/YYYY).
+
+    Args:
+        date_str: Date in YYYY-MM-DD format
+
+    Returns:
+        Date in MM/DD/YYYY format
+    """
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d")
+        return dt.strftime("%m/%d/%Y")
+    except ValueError:
+        # Already in correct format or invalid
+        return date_str
+
+
+def _write_csv(df: pd.DataFrame, output_path: str) -> None:
+    """
+    Write DataFrame to CSV file.
+
+    Args:
+        df: DataFrame to write
+        output_path: Path to output CSV file
+    """
+    try:
+        # Ensure directory exists
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+
+        df.to_csv(output_path, index=False)
+        print(f"Wrote {len(df)} rows to {output_path}")
+    except Exception as e:
+        print(f"Error writing to {output_path}: {e}")
+
+
+def fetch_team_games(
+    team_id: Any,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    season: Optional[str] = None,
+    timeout: int = 30,
+) -> pd.DataFrame:
+    """
+    Find games for a specific team within a date range using LeagueGameFinder.
+
+    This is the most flexible way to find games by team and date, and is a good
+    alternative to TeamGameLog and TeamGameLogs.
+
+    Args:
+        team_id: Team ID, abbreviation (e.g., 'LAL'), or full name
+        date_from: Start date in YYYY-MM-DD format (optional)
+        date_to: End date in YYYY-MM-DD format (optional)
+        season: Season string (e.g., '2023-24') (optional)
+        timeout: Request timeout in seconds
+
+    Returns:
+        DataFrame containing game data with GAME_ID, GAME_DATE, MATCHUP, etc.
+
+    Example:
+        >>> df = fetch_team_games('LAL', '2024-01-01', '2024-01-31')
+        >>> print(df[['GAME_ID', 'GAME_DATE', 'MATCHUP', 'WL', 'PTS']])
+    """
+    team_id_num = _normalize_team_id(team_id)
+    if team_id_num is None:
+        print(f"Could not resolve team_id: {team_id!r}")
+        return pd.DataFrame()
+
+    kwargs = {
+        "player_or_team_abbreviation": "T",
+        "team_id_nullable": team_id_num,
+        "timeout": timeout,
+    }
+
+    if date_from:
+        kwargs["date_from_nullable"] = _format_date_nba(date_from)
+    if date_to:
+        kwargs["date_to_nullable"] = _format_date_nba(date_to)
+    if season:
+        kwargs["season_nullable"] = season
+
+    try:
+        finder = leaguegamefinder.LeagueGameFinder(**kwargs)
+        dfs = finder.get_data_frames()
+        if dfs:
+            return dfs[0]
+    except Exception as e:
+        print(f"Error finding games: {e}")
+
+    return pd.DataFrame()
+
+
+def main():
+    """Main entry point for the CLI."""
+    parser = argparse.ArgumentParser(
+        description="Fetch team game box scores using LeagueGameFinder",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+    # Find games for a team in a date range
+    python lib/fetch_team_box_scores.py --team-id LAL --date-from 2024-01-01 --date-to 2024-01-31
+
+    # Find games for a team on a specific date
+    python lib/fetch_team_box_scores.py --team-id LAL --date 2024-01-15
+
+    # Find games for a team in a season
+    python lib/fetch_team_box_scores.py --team-id LAL --season 2023-24
+
+    # Specify custom output file
+    python lib/fetch_team_box_scores.py --team-id LAL --date 2024-01-15 --output my_output.csv
+        """,
+    )
+
+    parser.add_argument(
+        "--team-id",
+        dest="team_id",
+        required=True,
+        help="Team ID or abbreviation (e.g., 'LAL', '1610612747')",
+    )
+    parser.add_argument(
+        "--date",
+        help="Specific date (YYYY-MM-DD format). Sets both date-from and date-to.",
+    )
+    parser.add_argument(
+        "--date-from",
+        dest="date_from",
+        help="Start date for date range (YYYY-MM-DD format)",
+    )
+    parser.add_argument(
+        "--date-to",
+        dest="date_to",
+        help="End date for date range (YYYY-MM-DD format)",
+    )
+    parser.add_argument(
+        "--season",
+        help="Season filter (e.g., '2023-24')",
+    )
+    parser.add_argument(
+        "--output",
+        default=DEFAULT_OUTPUT_PATH,
+        help=f"Output CSV file path (default: {DEFAULT_OUTPUT_PATH})",
+    )
+
+    args = parser.parse_args()
+
+    # If --date is provided, use it for both date_from and date_to
+    date_from = args.date_from or args.date
+    date_to = args.date_to or args.date
+
+    # Fetch game data
+    df = fetch_team_games(
+        team_id=args.team_id,
+        date_from=date_from,
+        date_to=date_to,
+        season=args.season,
+    )
+
+    if df.empty:
+        print(f"No games found for {args.team_id}")
+    else:
+        print(f"\nFound {len(df)} games:")
+        display_cols = ["GAME_ID", "GAME_DATE", "MATCHUP", "WL", "PTS"]
+        available_cols = [c for c in display_cols if c in df.columns]
+        print(df[available_cols].to_string(index=False))
+
+        # Write to CSV
+        _write_csv(df, args.output)
+
+
+if __name__ == "__main__":
+    main()
