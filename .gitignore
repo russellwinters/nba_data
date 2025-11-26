@@ -3,3 +3,4 @@ venv/
 *.pyc
 __pycache__/
 data/
+!data/box_score_plan.md
