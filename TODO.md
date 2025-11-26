@@ -1,2 +1,2 @@
-- [ ] Find out why fetch_team_games isn't returning any data
+- [ ] Grt fetch_team_games to fetch data
 - [ ] Model the data we're getting for all these stats
