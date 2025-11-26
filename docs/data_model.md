@@ -227,7 +227,6 @@ CREATE TABLE player_game_logs (
     PTS             INTEGER,
     PLUS_MINUS      INTEGER,
     VIDEO_AVAILABLE INTEGER,
-    
     PRIMARY KEY (Player_ID, Game_ID),
     FOREIGN KEY (Player_ID) REFERENCES players(id)
 );
@@ -308,7 +307,6 @@ CREATE TABLE team_game_logs (
     TOV         INTEGER,
     PF          INTEGER,
     PTS         INTEGER,
-    
     PRIMARY KEY (Team_ID, Game_ID),
     FOREIGN KEY (Team_ID) REFERENCES teams(id)
 );
@@ -446,7 +444,6 @@ CREATE TABLE team_game_logs_extended (
     PFD_RANK          INTEGER,
     PTS_RANK          INTEGER,
     PLUS_MINUS_RANK   INTEGER,
-    
     PRIMARY KEY (TEAM_ID, GAME_ID),
     FOREIGN KEY (TEAM_ID) REFERENCES teams(id)
 );
@@ -527,7 +524,6 @@ CREATE TABLE player_career_stats (
     TOV               INTEGER,
     PF                INTEGER,
     PTS               INTEGER,
-    
     PRIMARY KEY (PLAYER_ID, SEASON_ID, TEAM_ID),
     FOREIGN KEY (PLAYER_ID) REFERENCES players(id),
     FOREIGN KEY (TEAM_ID) REFERENCES teams(id)
