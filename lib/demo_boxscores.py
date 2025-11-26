@@ -7,16 +7,16 @@ using the nba_api library. It provides alternatives to TeamGameLog and TeamGameL
 
 Usage:
     # Find games for a team on a specific date
-    python -m lib.demo_boxscores --team-id LAL --date 2024-01-15
+    python lib/demo_boxscores.py --team-id LAL --date 2024-01-15
 
     # Get box score for a specific game ID
-    python -m lib.demo_boxscores --game-id 0022400123
+    python lib/demo_boxscores.py --game-id 0022400123
 
     # Find all games on a specific date
-    python -m lib.demo_boxscores --date 2024-01-15
+    python lib/demo_boxscores.py --date 2024-01-15
 
     # Find games for a team in a date range
-    python -m lib.demo_boxscores --team-id LAL --date-from 2024-01-01 --date-to 2024-01-31
+    python lib/demo_boxscores.py --team-id LAL --date-from 2024-01-01 --date-to 2024-01-31
 
 Examples:
     # Get Lakers games from January 2024
