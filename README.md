@@ -134,3 +134,5 @@ The project uses a modular architecture with all core functionality in the `lib/
 - **`lib/read_stats.py`** — CSV data reading and display utility
 
 More detailed feature descriptions can be found on the [Features Doc](./docs/features.md)
+
+For SQL-oriented data modeling of the CSV outputs, see the [Data Model Doc](./docs/data_model.md)
