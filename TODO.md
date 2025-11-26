@@ -1,6 +1,2 @@
-- [ ] Update the current files so writing to file is DRY and optional
-- [ ] Change the current files fo functions that can be imported elsewhere
-- [ ] Import the functions to a main file, running all with args passed in from main
-- [ ] Make the write to file optional based on args
-- [ ] Convert the main file to handle different args, so this can be used like a proper CLI
-- [ ] Add a function that is a help for documentation
+- [ ] Find out why fetch_team_games isn't returning any data
+- [ ] Model the data we're getting for all these stats
