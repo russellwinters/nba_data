@@ -49,8 +49,6 @@ COLUMN_MAP = {
     "teamTricode": "TEAM_ABBREVIATION",
     "teamAbbreviation": "TEAM_ABBREVIATION",
     "TEAM_ABBREVIATION": "TEAM_ABBREVIATION",
-    "teamName": "TEAM_NAME",
-    "teamCity": "TEAM_CITY",
     # Core stats
     "minutes": "MIN",
     "MIN": "MIN",
@@ -58,8 +56,6 @@ COLUMN_MAP = {
     "PTS": "PTS",
     "reboundsTotal": "REB",
     "REB": "REB",
-    "reboundsDefensive": "DREB",
-    "reboundsOffensive": "OREB",
     "assists": "AST",
     "AST": "AST",
     "steals": "STL",
