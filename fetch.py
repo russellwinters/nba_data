@@ -282,7 +282,7 @@ def main():
                 print(df[available_cols].to_string(index=False))
 
                 # Write to CSV
-                fetch_team_box_scores._write_csv(df, args.output)
+                fetch_team_box_scores.write_csv(df, args.output)
         
         elif args.command == 'player-stats':
             fetch_player_stats(

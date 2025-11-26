@@ -86,7 +86,7 @@ def _format_date_nba(date_str: str) -> str:
         return date_str
 
 
-def _write_csv(df: pd.DataFrame, output_path: str) -> None:
+def write_csv(df: pd.DataFrame, output_path: str) -> None:
     """
     Write DataFrame to CSV file.
 
@@ -236,7 +236,7 @@ Examples:
         print(df[available_cols].to_string(index=False))
 
         # Write to CSV
-        _write_csv(df, args.output)
+        write_csv(df, args.output)
 
 
 if __name__ == "__main__":
