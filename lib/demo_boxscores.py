@@ -6,7 +6,7 @@ This module demonstrates various ways to retrieve box score data for NBA games
 using the nba_api library. It provides alternatives to TeamGameLog and TeamGameLogs.
 
 Usage:
-    # Find games for a team on a specific date
+    # Find games for a team on a specific date (writes to data/demo_boxscores.csv)
     python lib/demo_boxscores.py --team-id LAL --date 2024-01-15
 
     # Get box score for a specific game ID
@@ -17,6 +17,9 @@ Usage:
 
     # Find games for a team in a date range
     python lib/demo_boxscores.py --team-id LAL --date-from 2024-01-01 --date-to 2024-01-31
+
+    # Specify custom output file
+    python lib/demo_boxscores.py --team-id LAL --date 2024-01-15 --output my_output.csv
 
 Examples:
     # Get Lakers games from January 2024
@@ -30,6 +33,7 @@ Examples:
 """
 
 import argparse
+import os
 import time
 from datetime import datetime
 from typing import Any, Optional
@@ -349,7 +353,31 @@ def get_complete_box_score(
     return result
 
 
-def demo_find_games_by_team(team_id: str, date_from: str, date_to: str):
+# Default output path for CSV files
+DEFAULT_OUTPUT_PATH = "data/demo_boxscores.csv"
+
+
+def _write_csv(df: pd.DataFrame, output_path: str) -> None:
+    """
+    Write DataFrame to CSV file.
+
+    Args:
+        df: DataFrame to write
+        output_path: Path to output CSV file
+    """
+    try:
+        # Ensure directory exists
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+
+        df.to_csv(output_path, index=False)
+        print(f"\nWrote {len(df)} rows to {output_path}")
+    except Exception as e:
+        print(f"Error writing to {output_path}: {e}")
+
+
+def demo_find_games_by_team(team_id: str, date_from: str, date_to: str, output_path: Optional[str] = None) -> list:
     """Demo: Find games for a team in a date range."""
     print(f"\n{'='*60}")
     print(f"Finding games for {team_id} from {date_from} to {date_to}")
@@ -366,10 +394,14 @@ def demo_find_games_by_team(team_id: str, date_from: str, date_to: str):
     available_cols = [c for c in display_cols if c in df.columns]
     print(df[available_cols].to_string(index=False))
 
+    # Write to CSV if output path provided
+    if output_path:
+        _write_csv(df, output_path)
+
     return df["GAME_ID"].tolist()
 
 
-def demo_find_games_by_date(game_date: str):
+def demo_find_games_by_date(game_date: str, output_path: Optional[str] = None) -> list:
     """Demo: Find all games on a specific date."""
     print(f"\n{'='*60}")
     print(f"Finding all games on {game_date}")
@@ -386,10 +418,14 @@ def demo_find_games_by_date(game_date: str):
     available_cols = [c for c in display_cols if c in df.columns]
     print(df[available_cols].to_string(index=False))
 
+    # Write to CSV if output path provided
+    if output_path:
+        _write_csv(df, output_path)
+
     return df["GAME_ID"].tolist()
 
 
-def demo_get_box_score(game_id: str):
+def demo_get_box_score(game_id: str, output_path: Optional[str] = None):
     """Demo: Get complete box score for a game."""
     print(f"\n{'='*60}")
     print(f"Getting box score for game {game_id}")
@@ -434,6 +470,10 @@ def demo_get_box_score(game_id: str):
         else:
             print(player_df.head(10))
 
+        # Write player stats to CSV if output path provided
+        if output_path:
+            _write_csv(player_df, output_path)
+
     time.sleep(0.5)
 
     # Game summary
@@ -476,6 +516,9 @@ Examples:
 
     # Find games for a team in a date range
     python lib/demo_boxscores.py --team-id LAL --date-from 2024-01-01 --date-to 2024-01-31
+
+    # Specify custom output file
+    python lib/demo_boxscores.py --team-id LAL --date 2024-01-15 --output my_output.csv
         """,
     )
 
@@ -507,6 +550,11 @@ Examples:
         "--season",
         help="Season filter (e.g., '2023-24')",
     )
+    parser.add_argument(
+        "--output",
+        default=DEFAULT_OUTPUT_PATH,
+        help=f"Output CSV file path (default: {DEFAULT_OUTPUT_PATH})",
+    )
 
     args = parser.parse_args()
 
@@ -520,14 +568,14 @@ Examples:
 
     # If game ID provided, get box score directly
     if args.game_id:
-        demo_get_box_score(args.game_id)
+        demo_get_box_score(args.game_id, args.output)
         return
 
     # Find games by team and date range
     if args.team_id and (args.date_from or args.date_to or args.date):
         date_from = args.date_from or args.date
         date_to = args.date_to or args.date
-        game_ids = demo_find_games_by_team(args.team_id, date_from, date_to)
+        game_ids = demo_find_games_by_team(args.team_id, date_from, date_to, args.output)
 
     # Find games by team only (with optional season)
     elif args.team_id:
@@ -541,12 +589,14 @@ Examples:
             available_cols = [c for c in display_cols if c in df.columns]
             print(df[available_cols].head(10).to_string(index=False))
             game_ids = df["GAME_ID"].head(5).tolist()
+            # Write to CSV
+            _write_csv(df, args.output)
         else:
             print("No games found.")
 
     # Find games by date only
     elif args.date:
-        game_ids = demo_find_games_by_date(args.date)
+        game_ids = demo_find_games_by_date(args.date, args.output)
 
     # If we found games, offer to show box score for the first one
     if game_ids:
