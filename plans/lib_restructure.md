@@ -80,7 +80,9 @@ nba_data/
 | `lib/fetch_teams.py` | `lib/team/fetch_teams.py` | `fetch_teams()` |
 | `lib/fetch_team_games.py` | `lib/team/fetch_team_games.py` | `fetch_team_games()` |
 | `lib/fetch_team_game_logs.py` | `lib/team/fetch_team_game_logs.py` | `fetch_team_game_logs()` |
-| `lib/fetch_team_box_scores.py` | `lib/team/fetch_team_box_scores.py` | `fetch_team_games()`, `write_csv()` |
+| `lib/fetch_team_box_scores.py` | `lib/team/fetch_team_box_scores.py` | `fetch_team_games()` (note: module provides team game box scores), `write_csv()` |
+
+> **Note**: `lib/fetch_team_box_scores.py` exports `fetch_team_games()` - not `fetch_team_box_scores()`. Consider renaming the function to `fetch_team_box_scores()` during the refactor for consistency, or aliasing it in the `__init__.py`.
 
 ### Game Submodule (`lib/game/`)
 
@@ -145,8 +147,9 @@ from .team import (
     fetch_teams,
     fetch_team_games,
     fetch_team_game_logs,
-    fetch_team_box_scores,
 )
+# Import the module for backward compatibility with `from lib import fetch_team_box_scores`
+from .team import fetch_team_box_scores
 from .game import boxscores
 from .read_stats import read_stats
 
@@ -159,6 +162,7 @@ __all__ = [
     'fetch_player_stats',
     'fetch_player_boxscores_by_game',
     'read_stats',
+    'fetch_team_box_scores',  # Module re-export
     'boxscores',
 ]
 ```
@@ -167,12 +171,20 @@ __all__ = [
 
 1. **Create `lib/cli.py`**
    - Move CLI logic from `fetch.py` to `lib/cli.py`
-   - Update imports to use new submodule paths:
+   - Update imports to use new submodule paths (consistent style via submodule `__init__.py`):
      ```python
-     from lib.player import fetch_players, fetch_player_games, fetch_player_stats
-     from lib.player.fetch_player_boxscores import fetch_player_boxscores_by_game
-     from lib.team import fetch_teams, fetch_team_games, fetch_team_game_logs
-     from lib.team import fetch_team_box_scores
+     from lib.player import (
+         fetch_players,
+         fetch_player_games,
+         fetch_player_stats,
+         fetch_player_boxscores_by_game,
+     )
+     from lib.team import (
+         fetch_teams,
+         fetch_team_games,
+         fetch_team_game_logs,
+         fetch_team_box_scores,  # This is the module, not a function
+     )
      from lib.read_stats import read_stats
      ```
 
@@ -229,7 +241,25 @@ from lib.team import fetch_team_box_scores
 ```python
 # These still work via re-exports in lib/__init__.py
 from lib import fetch_players, fetch_team_games
+from lib import fetch_team_box_scores  # Module import
 ```
+
+## Helper Module Import Updates
+
+When modules are moved to submodules, their imports of `lib/helpers/team_helpers.py` need to be updated:
+
+### Before (from lib root)
+```python
+from lib.helpers.team_helpers import normalize_team_id
+```
+
+### After (from submodule - no change needed)
+```python
+# The import path stays the same because lib/helpers/ is not being moved
+from lib.helpers.team_helpers import normalize_team_id
+```
+
+> **Note**: Since `lib/helpers/` is staying at the same location, absolute imports like `from lib.helpers.team_helpers import normalize_team_id` will continue to work from any submodule. No changes are required for helper imports.
 
 ## Risks & Mitigations
 
