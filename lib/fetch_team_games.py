@@ -2,6 +2,8 @@ from nba_api.stats.endpoints import teamgamelog
 from nba_api.stats.static import teams
 import argparse
 
+from lib.helpers.csv_helpers import write_csv
+
 
 def fetch_team_games(team_id: str, season: str, output_path=None):
     """
@@ -55,18 +57,13 @@ def fetch_team_games(team_id: str, season: str, output_path=None):
             # Still write an empty CSV so downstream steps are reproducible
             if output_path is None:
                 output_path = f'data/team_{team_abbr}_games_{season}.csv'
-            try:
-                game_data.to_csv(output_path, index=False)
-                print(f"Wrote empty CSV to {output_path}")
-            except Exception:
-                print("Could not write empty CSV file")
+            write_csv(game_data, output_path)
             return game_data
 
         # Write the (non-empty) game data to a CSV file
         if output_path is None:
             output_path = f'data/team_{team_abbr}_games_{season}.csv'
-        game_data.to_csv(output_path, index=False)
-        print(f"Wrote {output_path} ({game_data.shape[0]} rows, {game_data.shape[1]} cols)")
+        write_csv(game_data, output_path)
         print(game_data.head())
         return game_data
     else:

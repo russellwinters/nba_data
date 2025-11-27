@@ -2,6 +2,8 @@ from nba_api.stats.endpoints import playergamelog
 from nba_api.stats.static import players
 import argparse
 
+from lib.helpers.csv_helpers import write_csv
+
 
 def fetch_player_games(player_id: int, season: str, output_path=None):
     """
@@ -28,7 +30,7 @@ def fetch_player_games(player_id: int, season: str, output_path=None):
         # Write the game data to a CSV file
         if output_path is None:
             output_path = f'data/{player_id}_games_{season}.csv'
-        game_data.to_csv(output_path, index=False)
+        write_csv(game_data, output_path)
         print(game_data)
         return game_data
     else:
