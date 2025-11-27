@@ -47,38 +47,38 @@ The diagram below shows relationships between tables. Tables use composite prima
        ├───────────────────────────┤
        │                           │
        ▼                           │
-┌──────────────────────┐           │
-│  Player Game Logs    │           │
-├──────────────────────┤           │
-│ FK: Player_ID ───────┼───────────┘
-│ Game_ID              │
-│ SEASON_ID            │
-│ GAME_DATE, MATCHUP   │
-│ Stats columns...     │
-└──────────────────────┘
+┌────────────────────────────┐     │
+│     Player Game Logs       │     │
+├────────────────────────────┤     │
+│ PK: (Player_ID, Game_ID)   │     │
+│ FK: Player_ID ─────────────┼─────┘
+│ SEASON_ID                  │
+│ GAME_DATE, MATCHUP         │
+│ Stats columns...           │
+└────────────────────────────┘
        │
        ▼
-┌──────────────────────┐           ┌──────────────────────┐
-│ Player Career Stats  │           │  Player Box Scores   │
-├──────────────────────┤           ├──────────────────────┤
-│ FK: PLAYER_ID ───────┼───┐       │ GAME_ID              │
-│ SEASON_ID            │   │       │ FK: PLAYER_ID ───────┼───┐
-│ FK: TEAM_ID ─────────┼───┼───┐   │ FK: TEAM_ID ─────────┼───┼───┐
-│ Career stats...      │   │   │   │ PLAYER_NAME          │   │   │
-└──────────────────────┘   │   │   │ Stats columns...     │   │   │
-                           │   │   └──────────────────────┘   │   │
-                           │   │                              │   │
-                           │   │   ┌──────────────────────┐   │   │
-                           │   │   │ Team Game Box Scores │   │   │
-                           │   │   ├──────────────────────┤   │   │
-                           │   │   │ FK: TEAM_ID ─────────┼───┼───┤
-                           │   │   │ GAME_ID              │   │   │
-                           │   │   │ GAME_DATE, MATCHUP   │   │   │
-                           │   │   │ Stats columns...     │   │   │
-                           │   │   └──────────────────────┘   │   │
-                           │   │                              │   │
-                           │   └──► References Teams.id ◄─────┼───┘
-                           └──────► References Players.id ◄───┘
+┌────────────────────────────────┐     ┌────────────────────────────┐
+│      Player Career Stats       │     │     Player Box Scores      │
+├────────────────────────────────┤     ├────────────────────────────┤
+│ PK: (PLAYER_ID, SEASON_ID,     │     │ PK: (GAME_ID, PLAYER_ID)   │
+│      TEAM_ID)                  │     │ FK: PLAYER_ID ─────────────┼───┐
+│ FK: PLAYER_ID ─────────────────┼──┐  │ FK: TEAM_ID ───────────────┼───┼──┐
+│ FK: TEAM_ID ───────────────────┼──┼┐ │ PLAYER_NAME                │   │  │
+│ Career stats...                │  ││ │ Stats columns...           │   │  │
+└────────────────────────────────┘  ││ └────────────────────────────┘   │  │
+                                    ││                                  │  │
+┌────────────────────────────────┐  ││                                  │  │
+│    Team Game Box Scores        │  ││                                  │  │
+├────────────────────────────────┤  ││                                  │  │
+│ PK: (TEAM_ID, GAME_ID)         │  ││                                  │  │
+│ FK: TEAM_ID ───────────────────┼──┼┼──────────────────────────────────┼──┤
+│ GAME_DATE, MATCHUP             │  ││                                  │  │
+│ Stats columns...               │  ││                                  │  │
+└────────────────────────────────┘  ││                                  │  │
+                                    ││                                  │  │
+                                    │└──► References Teams.id ◄─────────┼──┘
+                                    └────► References Players.id ◄──────┘
 ```
 
 ---
