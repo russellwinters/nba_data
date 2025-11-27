@@ -14,6 +14,7 @@ Available subcommands:
     team-games        Fetch a team's game log for a specific season
     team-game-logs    Fetch a team's filtered game logs (TeamGameLogs)
     player-stats      Fetch a player's career statistics
+    player-boxscores  Fetch player box scores for a specific game
     read-stats        Read and display a CSV file containing NBA statistics
 
 Examples:
@@ -21,6 +22,7 @@ Examples:
     python fetch.py player-games --player-id 2544 --season 2022-23
     python fetch.py team-games --team-id LAL --season 2022-23
     python fetch.py team-game-logs --team-id LAL --season 2022-23 --season-type "Regular Season" --output data/lakers_2023.csv
+    python fetch.py player-boxscores --game-id 0022400123 --output data/player_boxscores.csv
     python fetch.py read-stats players.csv
 """
 
@@ -33,6 +35,7 @@ from lib.fetch_player_games import fetch_player_games
 from lib.fetch_team_games import fetch_team_games
 from lib.fetch_team_game_logs import fetch_team_game_logs
 from lib.fetch_player_stats import fetch_player_stats
+from lib.fetch_player_boxscores_by_game import fetch_player_boxscores_by_game
 from lib.read_stats import read_stats
 
 
@@ -151,6 +154,23 @@ def create_parser():
         help='Output CSV file path (default: data/{player_id}_career.csv)'
     )
     
+    # player-boxscores subcommand
+    parser_player_boxscores = subparsers.add_parser(
+        'player-boxscores',
+        help='Fetch player box scores for a specific game'
+    )
+    parser_player_boxscores.add_argument(
+        '--game-id',
+        dest='game_id',
+        required=True,
+        help='NBA game ID (e.g., "0022400123")'
+    )
+    parser_player_boxscores.add_argument(
+        '--output',
+        default='data/player_boxscores.csv',
+        help='Output CSV file path (default: data/player_boxscores.csv)'
+    )
+    
     # read-stats subcommand
     parser_read_stats = subparsers.add_parser(
         'read-stats',
@@ -226,6 +246,12 @@ def main():
         elif args.command == 'player-stats':
             fetch_player_stats(
                 player_id=args.player_id,
+                output_path=args.output
+            )
+        
+        elif args.command == 'player-boxscores':
+            fetch_player_boxscores_by_game(
+                game_id=args.game_id,
                 output_path=args.output
             )
         
