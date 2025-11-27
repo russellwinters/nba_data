@@ -2,6 +2,8 @@ from nba_api.stats.static import players
 import pandas as pd
 import argparse
 
+from lib.helpers.csv_helpers import write_csv
+
 
 def fetch_players(output_path='data/players.csv'):
     """
@@ -15,7 +17,7 @@ def fetch_players(output_path='data/players.csv'):
     """
     all_players = players.get_players()
     df = pd.DataFrame(all_players)
-    df.to_csv(output_path, index=False)
+    write_csv(df, output_path)
     print(df)
     return df
 

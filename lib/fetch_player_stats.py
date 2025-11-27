@@ -2,6 +2,8 @@ from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.static import players
 import argparse
 
+from lib.helpers.csv_helpers import write_csv
+
 
 def fetch_player_stats(player_id: int, output_path=None):
     """
@@ -26,7 +28,7 @@ def fetch_player_stats(player_id: int, output_path=None):
         # Write the career stats to a CSV file
         if output_path is None:
             output_path = f'data/{player_id}_career.csv'
-        career_stats.to_csv(output_path, index=False)
+        write_csv(career_stats, output_path)
         print(career_stats)
         return career_stats
     else:
