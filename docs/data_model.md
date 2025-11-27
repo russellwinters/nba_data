@@ -11,6 +11,8 @@ This document describes the data structures returned by the NBA Data CLI command
   - [Teams](#teams)
   - [Player Game Logs](#player-game-logs)
   - [Player Career Stats](#player-career-stats)
+  - [Player Box Scores](#player-box-scores)
+  - [Team Game Box Scores](#team-game-box-scores)
 
 ---
 
@@ -38,31 +40,53 @@ The NBA Data CLI fetches data from the NBA Stats API and outputs CSV files. This
 │ is_active   │         │ city                │
 └──────┬──────┘         │ state               │
        │                │ year_founded        │
-       │                └─────────────────────┘
-       │
-       ▼
-┌──────────────────────┐
-│  Player Game Logs    │
-├──────────────────────┤
-│ PK: (Player_ID,      │
-│      Game_ID)        │
-│ FK: Player_ID        │
-│ SEASON_ID            │
+       │                └──────────┬──────────┘
+       │                           │
+       ▼                           │
+┌──────────────────────┐           │
+│  Player Game Logs    │           │
+├──────────────────────┤           │
+│ PK: (Player_ID,      │           │
+│      Game_ID)        │           │
+│ FK: Player_ID        │           │
+│ SEASON_ID            │           │
+│ GAME_DATE            │           │
+│ MATCHUP              │           │
+│ Stats columns...     │           │
+└──────────────────────┘           │
+       │                           │
+       ▼                           │
+┌──────────────────────┐           │
+│ Player Career Stats  │           │
+├──────────────────────┤           │
+│ PK: (PLAYER_ID,      │           │
+│      SEASON_ID,      │           │
+│      TEAM_ID)        │           │
+│ FK: PLAYER_ID        │◄──────────┤
+│ FK: TEAM_ID          │           │
+│ Career stats...      │           │
+└──────────────────────┘           │
+                                   │
+┌──────────────────────┐           │
+│  Player Box Scores   │           │
+├──────────────────────┤           │
+│ PK: (GAME_ID,        │           │
+│      PLAYER_ID)      │           │
+│ FK: PLAYER_ID        │           │
+│ FK: TEAM_ID          │◄──────────┤
+│ PLAYER_NAME          │           │
+│ Stats columns...     │           │
+└──────────────────────┘           │
+                                   │
+┌──────────────────────┐           │
+│ Team Game Box Scores │           │
+├──────────────────────┤           │
+│ PK: (TEAM_ID,        │           │
+│      GAME_ID)        │           │
+│ FK: TEAM_ID          │◄──────────┘
 │ GAME_DATE            │
 │ MATCHUP              │
 │ Stats columns...     │
-└──────────────────────┘
-       │
-       ▼
-┌──────────────────────┐
-│ Player Career Stats  │
-├──────────────────────┤
-│ PK: (PLAYER_ID,      │
-│      SEASON_ID,      │
-│      TEAM_ID)        │
-│ FK: PLAYER_ID        │
-│ FK: TEAM_ID          │
-│ Career stats...      │
 └──────────────────────┘
 ```
 
@@ -317,6 +341,176 @@ CREATE INDEX idx_player_career_stats_team ON player_career_stats(TEAM_ID);
 
 ---
 
+### Player Box Scores
+
+**CLI Command:** `python fetch.py player-boxscores --game-id <GAME_ID>`
+
+**Description:** Contains individual player box score statistics for a specific game. Each row represents one player's performance in a game, with players from both teams included.
+
+#### Schema
+
+| Column            | SQL Type       | Nullable | Description                                          |
+|-------------------|----------------|----------|------------------------------------------------------|
+| `GAME_ID`         | VARCHAR(10)    | NOT NULL | Unique game identifier                               |
+| `PLAYER_ID`       | INTEGER        | NOT NULL | **Foreign Key** to `players.id`                      |
+| `PLAYER_NAME`     | VARCHAR(100)   | NOT NULL | Player's full display name                           |
+| `TEAM_ID`         | INTEGER        | NOT NULL | **Foreign Key** to `teams.id`                        |
+| `TEAM_ABBREVIATION`| CHAR(3)       | NOT NULL | Three-letter team abbreviation                       |
+| `MIN`             | VARCHAR(10)    | NULL     | Minutes played (format: "MM:SS")                     |
+| `PTS`             | INTEGER        | NULL     | Points scored                                        |
+| `REB`             | INTEGER        | NULL     | Total rebounds                                       |
+| `AST`             | INTEGER        | NULL     | Assists                                              |
+| `STL`             | INTEGER        | NULL     | Steals                                               |
+| `BLK`             | INTEGER        | NULL     | Blocks                                               |
+| `TOV`             | INTEGER        | NULL     | Turnovers                                            |
+| `PF`              | INTEGER        | NULL     | Personal fouls                                       |
+| `PLUS_MINUS`      | INTEGER        | NULL     | Plus/minus rating for the game                       |
+| `FGM`             | INTEGER        | NULL     | Field goals made                                     |
+| `FGA`             | INTEGER        | NULL     | Field goals attempted                                |
+| `FG_PCT`          | DECIMAL(5,3)   | NULL     | Field goal percentage                                |
+| `FG3M`            | INTEGER        | NULL     | Three-point field goals made                         |
+| `FG3A`            | INTEGER        | NULL     | Three-point field goals attempted                    |
+| `FG3_PCT`         | DECIMAL(5,3)   | NULL     | Three-point field goal percentage                    |
+| `FTM`             | INTEGER        | NULL     | Free throws made                                     |
+| `FTA`             | INTEGER        | NULL     | Free throws attempted                                |
+| `FT_PCT`          | DECIMAL(5,3)   | NULL     | Free throw percentage                                |
+
+#### SQL DDL
+
+```sql
+CREATE TABLE player_box_scores (
+    GAME_ID           VARCHAR(10)   NOT NULL,
+    PLAYER_ID         INTEGER       NOT NULL,
+    PLAYER_NAME       VARCHAR(100)  NOT NULL,
+    TEAM_ID           INTEGER       NOT NULL,
+    TEAM_ABBREVIATION CHAR(3)       NOT NULL,
+    MIN               VARCHAR(10),
+    PTS               INTEGER,
+    REB               INTEGER,
+    AST               INTEGER,
+    STL               INTEGER,
+    BLK               INTEGER,
+    TOV               INTEGER,
+    PF                INTEGER,
+    PLUS_MINUS        INTEGER,
+    FGM               INTEGER,
+    FGA               INTEGER,
+    FG_PCT            DECIMAL(5,3),
+    FG3M              INTEGER,
+    FG3A              INTEGER,
+    FG3_PCT           DECIMAL(5,3),
+    FTM               INTEGER,
+    FTA               INTEGER,
+    FT_PCT            DECIMAL(5,3),
+    PRIMARY KEY (GAME_ID, PLAYER_ID),
+    FOREIGN KEY (PLAYER_ID) REFERENCES players(id),
+    FOREIGN KEY (TEAM_ID) REFERENCES teams(id)
+);
+
+CREATE INDEX idx_player_box_scores_game ON player_box_scores(GAME_ID);
+CREATE INDEX idx_player_box_scores_player ON player_box_scores(PLAYER_ID);
+CREATE INDEX idx_player_box_scores_team ON player_box_scores(TEAM_ID);
+```
+
+#### Sample Data
+
+| GAME_ID    | PLAYER_ID | PLAYER_NAME   | TEAM_ABBREVIATION | PTS | REB | AST |
+|------------|-----------|---------------|-------------------|-----|-----|-----|
+| 0022400123 | 2544      | LeBron James  | LAL               | 32  | 8   | 11  |
+| 0022400123 | 201939    | Stephen Curry | GSW               | 28  | 5   | 7   |
+
+---
+
+### Team Game Box Scores
+
+**CLI Command:** `python fetch.py team-game-boxscores --team-id <ID> --date-from <DATE> --date-to <DATE>`
+
+**Description:** Contains team-level game statistics retrieved via LeagueGameFinder. Each row represents one team's performance in a game within the specified date range or season. This provides team box scores for games filtered by date range and/or season.
+
+#### Schema
+
+| Column          | SQL Type       | Nullable | Description                                          |
+|-----------------|----------------|----------|------------------------------------------------------|
+| `SEASON_ID`     | VARCHAR(10)    | NOT NULL | Season identifier (e.g., "22023" for 2023-24)        |
+| `TEAM_ID`       | INTEGER        | NOT NULL | **Foreign Key** to `teams.id`                        |
+| `TEAM_ABBREVIATION`| CHAR(3)     | NOT NULL | Three-letter team abbreviation                       |
+| `TEAM_NAME`     | VARCHAR(50)    | NOT NULL | Full team name                                       |
+| `GAME_ID`       | VARCHAR(10)    | NOT NULL | Unique game identifier                               |
+| `GAME_DATE`     | DATE           | NOT NULL | Date the game was played                             |
+| `MATCHUP`       | VARCHAR(20)    | NOT NULL | Game matchup (e.g., "LAL vs. GSW" or "LAL @ BOS")    |
+| `WL`            | CHAR(1)        | NULL     | Win/Loss indicator ("W" or "L")                      |
+| `MIN`           | INTEGER        | NULL     | Total minutes played by team                         |
+| `PTS`           | INTEGER        | NULL     | Points scored                                        |
+| `FGM`           | INTEGER        | NULL     | Field goals made                                     |
+| `FGA`           | INTEGER        | NULL     | Field goals attempted                                |
+| `FG_PCT`        | DECIMAL(5,3)   | NULL     | Field goal percentage                                |
+| `FG3M`          | INTEGER        | NULL     | Three-point field goals made                         |
+| `FG3A`          | INTEGER        | NULL     | Three-point field goals attempted                    |
+| `FG3_PCT`       | DECIMAL(5,3)   | NULL     | Three-point field goal percentage                    |
+| `FTM`           | INTEGER        | NULL     | Free throws made                                     |
+| `FTA`           | INTEGER        | NULL     | Free throws attempted                                |
+| `FT_PCT`        | DECIMAL(5,3)   | NULL     | Free throw percentage                                |
+| `OREB`          | INTEGER        | NULL     | Offensive rebounds                                   |
+| `DREB`          | INTEGER        | NULL     | Defensive rebounds                                   |
+| `REB`           | INTEGER        | NULL     | Total rebounds                                       |
+| `AST`           | INTEGER        | NULL     | Assists                                              |
+| `STL`           | INTEGER        | NULL     | Steals                                               |
+| `BLK`           | INTEGER        | NULL     | Blocks                                               |
+| `TOV`           | INTEGER        | NULL     | Turnovers                                            |
+| `PF`            | INTEGER        | NULL     | Personal fouls                                       |
+| `PLUS_MINUS`    | INTEGER        | NULL     | Plus/minus rating for the game                       |
+
+#### SQL DDL
+
+```sql
+CREATE TABLE team_game_box_scores (
+    SEASON_ID         VARCHAR(10)   NOT NULL,
+    TEAM_ID           INTEGER       NOT NULL,
+    TEAM_ABBREVIATION CHAR(3)       NOT NULL,
+    TEAM_NAME         VARCHAR(50)   NOT NULL,
+    GAME_ID           VARCHAR(10)   NOT NULL,
+    GAME_DATE         DATE          NOT NULL,
+    MATCHUP           VARCHAR(20)   NOT NULL,
+    WL                CHAR(1),
+    MIN               INTEGER,
+    PTS               INTEGER,
+    FGM               INTEGER,
+    FGA               INTEGER,
+    FG_PCT            DECIMAL(5,3),
+    FG3M              INTEGER,
+    FG3A              INTEGER,
+    FG3_PCT           DECIMAL(5,3),
+    FTM               INTEGER,
+    FTA               INTEGER,
+    FT_PCT            DECIMAL(5,3),
+    OREB              INTEGER,
+    DREB              INTEGER,
+    REB               INTEGER,
+    AST               INTEGER,
+    STL               INTEGER,
+    BLK               INTEGER,
+    TOV               INTEGER,
+    PF                INTEGER,
+    PLUS_MINUS        INTEGER,
+    PRIMARY KEY (TEAM_ID, GAME_ID),
+    FOREIGN KEY (TEAM_ID) REFERENCES teams(id)
+);
+
+CREATE INDEX idx_team_game_box_scores_season ON team_game_box_scores(SEASON_ID);
+CREATE INDEX idx_team_game_box_scores_team ON team_game_box_scores(TEAM_ID);
+CREATE INDEX idx_team_game_box_scores_date ON team_game_box_scores(GAME_DATE);
+CREATE INDEX idx_team_game_box_scores_game ON team_game_box_scores(GAME_ID);
+```
+
+#### Sample Data
+
+| GAME_ID    | TEAM_ABBREVIATION | GAME_DATE  | MATCHUP      | WL | PTS | REB | AST |
+|------------|-------------------|------------|--------------|-----|-----|-----|-----|
+| 0022400123 | LAL               | 2024-01-15 | LAL vs. GSW  | W   | 118 | 45  | 28  |
+| 0022400123 | GSW               | 2024-01-15 | GSW @ LAL    | L   | 112 | 42  | 25  |
+
+---
+
 ## Statistics Glossary
 
 | Abbreviation | Full Name                      | Description                                    |
@@ -389,6 +583,37 @@ FROM players p
 JOIN player_career_stats pcs ON p.id = pcs.PLAYER_ID
 WHERE p.is_active = TRUE
 ORDER BY PPG DESC;
+```
+
+### Query player box scores for a game
+
+```bash
+# Fetch player box scores for a specific game
+python fetch.py player-boxscores --game-id 0022400123 --output data/player_boxscores.csv
+```
+
+```sql
+-- Find top scorers in a specific game
+SELECT PLAYER_NAME, TEAM_ABBREVIATION, PTS, REB, AST, FG_PCT
+FROM player_box_scores
+WHERE GAME_ID = '0022400123'
+ORDER BY PTS DESC;
+```
+
+### Query team game box scores
+
+```bash
+# Fetch Lakers games in January 2024
+python fetch.py team-game-boxscores --team-id LAL --date-from 2024-01-01 --date-to 2024-01-31 --output data/lakers_jan_2024.csv
+```
+
+```sql
+-- Find team's highest scoring games in a date range
+SELECT GAME_DATE, MATCHUP, WL, PTS, FG_PCT, FG3_PCT
+FROM team_game_box_scores
+WHERE TEAM_ID = 1610612747
+ORDER BY PTS DESC
+LIMIT 5;
 ```
 
 ---
