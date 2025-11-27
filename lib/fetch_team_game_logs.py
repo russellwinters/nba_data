@@ -16,6 +16,8 @@ import argparse
 from nba_api.stats.endpoints import teamgamelogs
 from nba_api.stats.static import teams
 
+from lib.helpers import handle_api_errors, log_error, log_info, log_warning
+
 
 def _normalize_team_id(team_id: Any) -> int:
     """Resolve a numeric team id or common string forms to the numeric team id.
@@ -53,6 +55,7 @@ def _normalize_team_id(team_id: Any) -> int:
     raise ValueError(f"Could not resolve team_id: {team_id!r}")
 
 
+@handle_api_errors
 def fetch_team_game_logs(
     team_id: Any,
     season: Optional[str] = None,
@@ -91,7 +94,7 @@ def fetch_team_game_logs(
         team_id_num = _normalize_team_id(team_id)
     except ValueError as e:
         # Print a clear, repo-consistent diagnostic and return an empty DataFrame
-        print(f"Could not resolve team_id: {team_id!r} - {e}")
+        log_error(f"Could not resolve team_id: {team_id!r}", {"error": str(e)})
         return pd.DataFrame()
 
     request_kwargs = {}
@@ -152,20 +155,20 @@ def fetch_team_game_logs(
         except Exception as e:
             last_exc = e
     if endpoint is None:
-        print("Failed to construct TeamGameLogs endpoint with known signatures:", last_exc)
+        log_error("Failed to construct TeamGameLogs endpoint with known signatures", {"last_error": str(last_exc)})
         return pd.DataFrame()
 
     # Diagnostic: show what we found for the requested team (consistent with other lib modules)
     try:
         if hasattr(endpoint, 'parameters'):
             try:
-                print("Request parameters:", endpoint.parameters)
+                log_info(f"Request parameters: {endpoint.parameters}")
             except Exception:
                 pass
         if getattr(endpoint, 'nba_response', None) is not None:
             try:
                 norm = endpoint.nba_response.get_normalized_dict()
-                print("NBA response keys:", list(norm.keys()))
+                log_info(f"NBA response keys: {list(norm.keys())}")
             except Exception:
                 pass
     except Exception:
@@ -175,7 +178,7 @@ def fetch_team_game_logs(
     try:
         dfs = endpoint.get_data_frames()
     except Exception as e:
-        print("Failed to retrieve data frames from TeamGameLogs endpoint:", e)
+        log_error("Failed to retrieve data frames from TeamGameLogs endpoint", {"error": str(e)})
         return pd.DataFrame()
 
     if not dfs:
@@ -208,15 +211,15 @@ def fetch_team_game_logs(
         df.to_csv(output_path, index=False)
         try:
             rows, cols = df.shape
-            print(f"Wrote {output_path} ({rows} rows, {cols} cols)")
+            log_info(f"Wrote {output_path} ({rows} rows, {cols} cols)")
         except Exception:
-            print(f"Wrote {output_path}")
+            log_info(f"Wrote {output_path}")
         try:
             print(df.head())
         except Exception:
             pass
     except Exception as e:
-        print(f"Failed to write CSV to {output_path}: {e}")
+        log_error(f"Failed to write CSV to {output_path}", {"error": str(e)})
 
     return df
 

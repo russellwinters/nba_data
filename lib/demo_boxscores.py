@@ -49,6 +49,8 @@ from nba_api.stats.endpoints import (
 )
 from nba_api.stats.static import teams
 
+from lib.helpers import handle_api_errors, log_error, log_info
+
 
 def _normalize_team_id(team_id: Any) -> Optional[int]:
     """
@@ -107,6 +109,7 @@ def _format_date_nba(date_str: str) -> str:
         return date_str
 
 
+@handle_api_errors
 def find_games_by_team_and_date(
     team_id: Any,
     date_from: Optional[str] = None,
@@ -136,7 +139,7 @@ def find_games_by_team_and_date(
     """
     team_id_num = _normalize_team_id(team_id)
     if team_id_num is None:
-        print(f"Could not resolve team_id: {team_id!r}")
+        log_error("Could not resolve team_id", {"team_id": team_id})
         return pd.DataFrame()
 
     kwargs = {
@@ -158,11 +161,12 @@ def find_games_by_team_and_date(
         if dfs:
             return dfs[0]
     except Exception as e:
-        print(f"Error finding games: {e}")
+        log_error("Error finding games", {"error": str(e)})
 
     return pd.DataFrame()
 
 
+@handle_api_errors
 def find_games_by_date(
     game_date: str,
     timeout: int = 30,
@@ -191,7 +195,7 @@ def find_games_by_date(
         if dfs:
             return dfs[0]
     except Exception as e:
-        print(f"Error fetching scoreboard: {e}")
+        log_error("Error fetching scoreboard", {"error": str(e)})
 
     return pd.DataFrame()
 
@@ -227,7 +231,7 @@ def get_box_score_traditional(
                 "team_stats": dfs[1],
             }
     except Exception as e:
-        print(f"Error fetching box score: {e}")
+        log_error("Error fetching box score", {"error": str(e)})
 
     return {"player_stats": pd.DataFrame(), "team_stats": pd.DataFrame()}
 
@@ -262,7 +266,7 @@ def get_box_score_advanced(
                 "team_stats": dfs[1],
             }
     except Exception as e:
-        print(f"Error fetching advanced box score: {e}")
+        log_error("Error fetching advanced box score", {"error": str(e)})
 
     return {"player_stats": pd.DataFrame(), "team_stats": pd.DataFrame()}
 
@@ -311,7 +315,7 @@ def get_game_summary(
                 result[name] = pd.DataFrame()
         return result
     except Exception as e:
-        print(f"Error fetching game summary: {e}")
+        log_error("Error fetching game summary", {"error": str(e)})
 
     return {}
 
@@ -372,9 +376,9 @@ def _write_csv(df: pd.DataFrame, output_path: str) -> None:
             os.makedirs(output_dir, exist_ok=True)
 
         df.to_csv(output_path, index=False)
-        print(f"\nWrote {len(df)} rows to {output_path}")
+        log_info(f"Wrote {len(df)} rows to {output_path}")
     except Exception as e:
-        print(f"Error writing to {output_path}: {e}")
+        log_error(f"Error writing to {output_path}", {"error": str(e)})
 
 
 def demo_find_games_by_team(team_id: str, date_from: str, date_to: str, output_path: Optional[str] = None) -> list:

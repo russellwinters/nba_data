@@ -1,8 +1,12 @@
 from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.static import players
 import argparse
+import pandas as pd
+
+from lib.helpers import handle_api_errors, log_error, log_info
 
 
+@handle_api_errors
 def fetch_player_stats(player_id: int, output_path=None):
     """
     Fetch a player's career statistics.
@@ -27,11 +31,12 @@ def fetch_player_stats(player_id: int, output_path=None):
         if output_path is None:
             output_path = f'data/{player_id}_career.csv'
         career_stats.to_csv(output_path, index=False)
+        log_info(f"Wrote {len(career_stats)} rows to {output_path}")
         print(career_stats)
         return career_stats
     else:
-        print("Player not found")
-        return None
+        log_error("Player not found", {"player_id": player_id})
+        return pd.DataFrame()
 
 
 def main():

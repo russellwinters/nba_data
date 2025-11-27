@@ -24,6 +24,8 @@ import pandas as pd
 from nba_api.stats.endpoints import leaguegamefinder
 from nba_api.stats.static import teams
 
+from lib.helpers import handle_api_errors, log_error, log_info
+
 
 # Default output path for CSV files
 DEFAULT_OUTPUT_PATH = "data/demo_boxscores.csv"
@@ -101,11 +103,12 @@ def write_csv(df: pd.DataFrame, output_path: str) -> None:
             os.makedirs(output_dir, exist_ok=True)
 
         df.to_csv(output_path, index=False)
-        print(f"Wrote {len(df)} rows to {output_path}")
+        log_info(f"Wrote {len(df)} rows to {output_path}")
     except Exception as e:
-        print(f"Error writing to {output_path}: {e}")
+        log_error(f"Error writing to {output_path}", {"error": str(e)})
 
 
+@handle_api_errors
 def fetch_team_games(
     team_id: Any,
     date_from: Optional[str] = None,
@@ -135,7 +138,7 @@ def fetch_team_games(
     """
     team_id_num = _normalize_team_id(team_id)
     if team_id_num is None:
-        print(f"Could not resolve team_id: {team_id!r}")
+        log_error("Could not resolve team_id", {"team_id": team_id})
         return pd.DataFrame()
 
     kwargs = {
@@ -157,7 +160,7 @@ def fetch_team_games(
         if dfs:
             return dfs[0]
     except Exception as e:
-        print(f"Error finding games: {e}")
+        log_error("Error finding games", {"error": str(e)})
 
     return pd.DataFrame()
 

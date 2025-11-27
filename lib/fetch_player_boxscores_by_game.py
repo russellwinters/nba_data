@@ -25,6 +25,8 @@ import pandas as pd
 
 from nba_api.stats.endpoints import boxscoretraditionalv3
 
+from lib.helpers import handle_api_errors, log_error, log_info, log_warning
+
 
 # Default output path for player box score CSV files
 DEFAULT_PLAYER_BOX_SCORES_PATH = "data/player_boxscores.csv"
@@ -166,11 +168,12 @@ def _write_csv(df: pd.DataFrame, output_path: str) -> None:
             os.makedirs(output_dir, exist_ok=True)
 
         df.to_csv(output_path, index=False)
-        print(f"Wrote {len(df)} rows to {output_path}")
+        log_info(f"Wrote {len(df)} rows to {output_path}")
     except Exception as e:
-        print(f"Error writing to {output_path}: {e}")
+        log_error(f"Error writing to {output_path}", {"error": str(e)})
 
 
+@handle_api_errors
 def get_player_boxscores(
     game_id: str,
     timeout: int = 30,
@@ -212,7 +215,7 @@ def get_player_boxscores(
                 return player_df
 
     except Exception as e:
-        print(f"Error fetching player box scores for game {game_id}: {e}")
+        log_error(f"Error fetching player box scores for game {game_id}", {"error": str(e)})
 
     return pd.DataFrame()
 
@@ -242,7 +245,7 @@ def fetch_player_boxscores_by_game(
     df = get_player_boxscores(game_id, timeout)
 
     if df.empty:
-        print(f"No player box score data found for game {game_id}")
+        log_warning(f"No player box score data found for game {game_id}")
         return df
 
     _write_csv(df, output_path)
