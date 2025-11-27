@@ -33,9 +33,7 @@ Examples:
 """
 
 import argparse
-import os
 import time
-from datetime import datetime
 from typing import Any, Optional
 
 import pandas as pd
@@ -47,64 +45,10 @@ from nba_api.stats.endpoints import (
     leaguegamefinder,
     scoreboardv2,
 )
-from nba_api.stats.static import teams
 
-
-def _normalize_team_id(team_id: Any) -> Optional[int]:
-    """
-    Resolve a team identifier to a numeric team ID.
-
-    Args:
-        team_id: Team ID (int), abbreviation (e.g., 'LAL'), or team name
-
-    Returns:
-        Numeric team ID or None if not found
-    """
-    if team_id is None:
-        return None
-
-    # Already numeric
-    if isinstance(team_id, int):
-        return team_id
-
-    # Numeric string
-    if isinstance(team_id, str) and team_id.isdigit():
-        return int(team_id)
-
-    # Try abbreviation
-    if isinstance(team_id, str):
-        team_abbr = team_id.strip().upper()
-        found = teams.find_team_by_abbreviation(team_abbr)
-        if found:
-            return found["id"]
-
-        # Try full name
-        try:
-            found = teams.find_team_by_full_name(team_id.strip())
-            if found:
-                return found["id"]
-        except Exception:
-            pass
-
-    return None
-
-
-def _format_date_nba(date_str: str) -> str:
-    """
-    Convert date string to NBA API format (MM/DD/YYYY).
-
-    Args:
-        date_str: Date in YYYY-MM-DD format
-
-    Returns:
-        Date in MM/DD/YYYY format
-    """
-    try:
-        dt = datetime.strptime(date_str, "%Y-%m-%d")
-        return dt.strftime("%m/%d/%Y")
-    except ValueError:
-        # Already in correct format or invalid
-        return date_str
+from lib.helpers.csv_helpers import write_csv
+from lib.helpers.date_helpers import format_date_nba
+from lib.helpers.team_helpers import normalize_team_id
 
 
 def find_games_by_team_and_date(
@@ -134,7 +78,7 @@ def find_games_by_team_and_date(
         >>> df = find_games_by_team_and_date('LAL', '2024-01-01', '2024-01-31')
         >>> print(df[['GAME_ID', 'GAME_DATE', 'MATCHUP', 'WL', 'PTS']])
     """
-    team_id_num = _normalize_team_id(team_id)
+    team_id_num = normalize_team_id(team_id)
     if team_id_num is None:
         print(f"Could not resolve team_id: {team_id!r}")
         return pd.DataFrame()
@@ -146,9 +90,9 @@ def find_games_by_team_and_date(
     }
 
     if date_from:
-        kwargs["date_from_nullable"] = _format_date_nba(date_from)
+        kwargs["date_from_nullable"] = format_date_nba(date_from)
     if date_to:
-        kwargs["date_to_nullable"] = _format_date_nba(date_to)
+        kwargs["date_to_nullable"] = format_date_nba(date_to)
     if season:
         kwargs["season_nullable"] = season
 
@@ -357,26 +301,6 @@ def get_complete_box_score(
 DEFAULT_OUTPUT_PATH = "data/demo_boxscores.csv"
 
 
-def _write_csv(df: pd.DataFrame, output_path: str) -> None:
-    """
-    Write DataFrame to CSV file.
-
-    Args:
-        df: DataFrame to write
-        output_path: Path to output CSV file
-    """
-    try:
-        # Ensure directory exists
-        output_dir = os.path.dirname(output_path)
-        if output_dir and not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
-
-        df.to_csv(output_path, index=False)
-        print(f"\nWrote {len(df)} rows to {output_path}")
-    except Exception as e:
-        print(f"Error writing to {output_path}: {e}")
-
-
 def demo_find_games_by_team(team_id: str, date_from: str, date_to: str, output_path: Optional[str] = None) -> list:
     """Demo: Find games for a team in a date range."""
     print(f"\n{'='*60}")
@@ -396,7 +320,7 @@ def demo_find_games_by_team(team_id: str, date_from: str, date_to: str, output_p
 
     # Write to CSV if output path provided
     if output_path:
-        _write_csv(df, output_path)
+        write_csv(df, output_path)
 
     return df["GAME_ID"].tolist()
 
@@ -420,7 +344,7 @@ def demo_find_games_by_date(game_date: str, output_path: Optional[str] = None) -
 
     # Write to CSV if output path provided
     if output_path:
-        _write_csv(df, output_path)
+        write_csv(df, output_path)
 
     return df["GAME_ID"].tolist()
 
@@ -472,7 +396,7 @@ def demo_get_box_score(game_id: str, output_path: Optional[str] = None):
 
         # Write player stats to CSV if output path provided
         if output_path:
-            _write_csv(player_df, output_path)
+            write_csv(player_df, output_path)
 
     time.sleep(0.5)
 
@@ -590,7 +514,7 @@ Examples:
             print(df[available_cols].head(10).to_string(index=False))
             game_ids = df["GAME_ID"].head(5).tolist()
             # Write to CSV
-            _write_csv(df, args.output)
+            write_csv(df, args.output)
         else:
             print("No games found.")
 
