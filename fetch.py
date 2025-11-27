@@ -13,6 +13,7 @@ Available subcommands:
     player-games      Fetch a player's game log for a specific season
     team-games        Fetch a team's game log for a specific season
     team-game-logs    Fetch a team's filtered game logs (TeamGameLogs)
+    team-game-boxscores  Fetch team games within a date range (LeagueGameFinder)
     player-stats      Fetch a player's career statistics
     read-stats        Read and display a CSV file containing NBA statistics
 
@@ -21,6 +22,7 @@ Examples:
     python fetch.py player-games --player-id 2544 --season 2022-23
     python fetch.py team-games --team-id LAL --season 2022-23
     python fetch.py team-game-logs --team-id LAL --season 2022-23 --season-type "Regular Season" --output data/lakers_2023.csv
+    python fetch.py team-game-boxscores --team-id LAL --date-from 2024-01-01 --date-to 2024-01-31
     python fetch.py read-stats players.csv
 """
 
@@ -34,6 +36,7 @@ from lib.fetch_team_games import fetch_team_games
 from lib.fetch_team_game_logs import fetch_team_game_logs
 from lib.fetch_player_stats import fetch_player_stats
 from lib.read_stats import read_stats
+from lib import fetch_team_box_scores
 
 
 def create_parser():
@@ -134,6 +137,41 @@ def create_parser():
         '--output',
         help='Output CSV file path (optional). If provided, saves DataFrame to this path',
     )
+
+    # team-game-boxscores subcommand (uses LeagueGameFinder — date range based)
+    parser_team_game_boxscores = subparsers.add_parser(
+        'team-game-boxscores',
+        help='Fetch team games within a date range (LeagueGameFinder) and save to CSV'
+    )
+    parser_team_game_boxscores.add_argument(
+        '--team-id',
+        dest='team_id',
+        required=True,
+        help='Team identifier: numeric id, abbreviation (e.g. "LAL"), or full team name',
+    )
+    parser_team_game_boxscores.add_argument(
+        '--date',
+        help='Specific date (YYYY-MM-DD format). Sets both date-from and date-to.',
+    )
+    parser_team_game_boxscores.add_argument(
+        '--date-from',
+        dest='date_from',
+        help='Start date for date range (YYYY-MM-DD format)',
+    )
+    parser_team_game_boxscores.add_argument(
+        '--date-to',
+        dest='date_to',
+        help='End date for date range (YYYY-MM-DD format)',
+    )
+    parser_team_game_boxscores.add_argument(
+        '--season',
+        help='Season filter (e.g., "2023-24")',
+    )
+    parser_team_game_boxscores.add_argument(
+        '--output',
+        default='data/demo_boxscores.csv',
+        help='Output CSV file path (default: data/demo_boxscores.csv)',
+    )
     
     # player-stats subcommand
     parser_player_stats = subparsers.add_parser(
@@ -222,6 +260,29 @@ def main():
                         print(df.head())
                     except Exception:
                         print(df)
+
+        elif args.command == 'team-game-boxscores':
+            # If --date is provided, use it for both date_from and date_to
+            date_from = getattr(args, 'date_from', None) or getattr(args, 'date', None)
+            date_to = getattr(args, 'date_to', None) or getattr(args, 'date', None)
+
+            df = fetch_team_box_scores.fetch_team_games(
+                team_id=args.team_id,
+                date_from=date_from,
+                date_to=date_to,
+                season=getattr(args, 'season', None),
+            )
+
+            if df is None or (hasattr(df, 'empty') and df.empty):
+                print(f"No games found for {args.team_id}")
+            else:
+                print(f"\nFound {len(df)} games:")
+                display_cols = ["GAME_ID", "GAME_DATE", "MATCHUP", "WL", "PTS"]
+                available_cols = [c for c in display_cols if c in df.columns]
+                print(df[available_cols].to_string(index=False))
+
+                # Write to CSV
+                fetch_team_box_scores.write_csv(df, args.output)
         
         elif args.command == 'player-stats':
             fetch_player_stats(

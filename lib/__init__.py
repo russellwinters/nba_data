@@ -12,6 +12,7 @@ from .fetch_team_games import fetch_team_games
 from .fetch_team_game_logs import fetch_team_game_logs
 from .fetch_player_stats import fetch_player_stats
 from .read_stats import read_stats
+from . import fetch_team_box_scores
 
 __all__ = [
     'fetch_players',
@@ -21,4 +22,5 @@ __all__ = [
     'fetch_team_game_logs',
     'fetch_player_stats',
     'read_stats',
+    'fetch_team_box_scores',
 ]
