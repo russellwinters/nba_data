@@ -29,6 +29,8 @@ The NBA Data CLI fetches data from the NBA Stats API and outputs CSV files. This
 
 ## Entity Relationship Diagram
 
+The diagram below shows relationships between tables. Tables use composite primary keys based on natural identifiers from the NBA API data (e.g., PLAYER_ID + GAME_ID uniquely identifies a player's box score for a game). This approach reflects how the API returns data and avoids the need for synthetic IDs.
+
 ```
 ┌─────────────┐         ┌─────────────────────┐
 │   Players   │         │       Teams         │
@@ -42,52 +44,41 @@ The NBA Data CLI fetches data from the NBA Stats API and outputs CSV files. This
        │                │ year_founded        │
        │                └──────────┬──────────┘
        │                           │
+       ├───────────────────────────┤
+       │                           │
        ▼                           │
 ┌──────────────────────┐           │
 │  Player Game Logs    │           │
 ├──────────────────────┤           │
-│ PK: (Player_ID,      │           │
-│      Game_ID)        │           │
-│ FK: Player_ID        │           │
-│ SEASON_ID            │           │
-│ GAME_DATE            │           │
-│ MATCHUP              │           │
-│ Stats columns...     │           │
-└──────────────────────┘           │
-       │                           │
-       ▼                           │
-┌──────────────────────┐           │
-│ Player Career Stats  │           │
-├──────────────────────┤           │
-│ PK: (PLAYER_ID,      │           │
-│      SEASON_ID,      │           │
-│      TEAM_ID)        │           │
-│ FK: PLAYER_ID        │◄──────────┤
-│ FK: TEAM_ID          │           │
-│ Career stats...      │           │
-└──────────────────────┘           │
-                                   │
-┌──────────────────────┐           │
-│  Player Box Scores   │           │
-├──────────────────────┤           │
-│ PK: (GAME_ID,        │           │
-│      PLAYER_ID)      │           │
-│ FK: PLAYER_ID        │           │
-│ FK: TEAM_ID          │◄──────────┤
-│ PLAYER_NAME          │           │
-│ Stats columns...     │           │
-└──────────────────────┘           │
-                                   │
-┌──────────────────────┐           │
-│ Team Game Box Scores │           │
-├──────────────────────┤           │
-│ PK: (TEAM_ID,        │           │
-│      GAME_ID)        │           │
-│ FK: TEAM_ID          │◄──────────┘
-│ GAME_DATE            │
-│ MATCHUP              │
+│ FK: Player_ID ───────┼───────────┘
+│ Game_ID              │
+│ SEASON_ID            │
+│ GAME_DATE, MATCHUP   │
 │ Stats columns...     │
 └──────────────────────┘
+       │
+       ▼
+┌──────────────────────┐           ┌──────────────────────┐
+│ Player Career Stats  │           │  Player Box Scores   │
+├──────────────────────┤           ├──────────────────────┤
+│ FK: PLAYER_ID ───────┼───┐       │ GAME_ID              │
+│ SEASON_ID            │   │       │ FK: PLAYER_ID ───────┼───┐
+│ FK: TEAM_ID ─────────┼───┼───┐   │ FK: TEAM_ID ─────────┼───┼───┐
+│ Career stats...      │   │   │   │ PLAYER_NAME          │   │   │
+└──────────────────────┘   │   │   │ Stats columns...     │   │   │
+                           │   │   └──────────────────────┘   │   │
+                           │   │                              │   │
+                           │   │   ┌──────────────────────┐   │   │
+                           │   │   │ Team Game Box Scores │   │   │
+                           │   │   ├──────────────────────┤   │   │
+                           │   │   │ FK: TEAM_ID ─────────┼───┼───┤
+                           │   │   │ GAME_ID              │   │   │
+                           │   │   │ GAME_DATE, MATCHUP   │   │   │
+                           │   │   │ Stats columns...     │   │   │
+                           │   │   └──────────────────────┘   │   │
+                           │   │                              │   │
+                           │   └──► References Teams.id ◄─────┼───┘
+                           └──────► References Players.id ◄───┘
 ```
 
 ---
