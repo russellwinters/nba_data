@@ -25,6 +25,7 @@ from lib.helpers.error_handling import (
 __all__ = [
     # Team helpers
     "normalize_team_id",
+    "write_csv",
     # Exceptions
     "NBADataError",
     "EntityNotFoundError",
@@ -43,5 +44,3 @@ __all__ = [
     "safe_api_call",
     "setup_logging",
 ]
-
-__all__ = ["normalize_team_id", "write_csv"]
