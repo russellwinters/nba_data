@@ -16,41 +16,7 @@ import argparse
 from nba_api.stats.endpoints import teamgamelogs
 from nba_api.stats.static import teams
 
-
-def _normalize_team_id(team_id: Any) -> int:
-    """Resolve a numeric team id or common string forms to the numeric team id.
-
-    Accepts an int (returned as-is), a numeric string (converted to int), a
-    team abbreviation (e.g. 'LAL'), or a full team name. Raises `ValueError`
-    if the team cannot be resolved.
-    """
-    if team_id is None:
-        raise ValueError("team_id is required")
-
-    # Already numeric
-    if isinstance(team_id, int):
-        return team_id
-
-    # Numeric string
-    if isinstance(team_id, str) and team_id.isdigit():
-        return int(team_id)
-
-    # Try abbreviation (common usage in this repo)
-    if isinstance(team_id, str):
-        team_abbr = team_id.strip().upper()
-        found = teams.find_team_by_abbreviation(team_abbr)
-        if found:
-            return found["id"]
-
-        # Try full name lookup
-        try:
-            found = teams.find_team_by_full_name(team_id.strip())
-            if found:
-                return found["id"]
-        except Exception:
-            pass
-
-    raise ValueError(f"Could not resolve team_id: {team_id!r}")
+from lib.helpers.team_helpers import normalize_team_id
 
 
 def fetch_team_game_logs(
@@ -87,11 +53,10 @@ def fetch_team_game_logs(
         `team_id` values (with a warning) to match the tolerant behavior used
         elsewhere in this project.
     """
-    try:
-        team_id_num = _normalize_team_id(team_id)
-    except ValueError as e:
+    team_id_num = normalize_team_id(team_id)
+    if team_id_num is None:
         # Print a clear, repo-consistent diagnostic and return an empty DataFrame
-        print(f"Could not resolve team_id: {team_id!r} - {e}")
+        print(f"Could not resolve team_id: {team_id!r}")
         return pd.DataFrame()
 
     request_kwargs = {}

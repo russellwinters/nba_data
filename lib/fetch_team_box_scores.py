@@ -22,50 +22,12 @@ from typing import Any, Optional
 import pandas as pd
 
 from nba_api.stats.endpoints import leaguegamefinder
-from nba_api.stats.static import teams
+
+from lib.helpers.team_helpers import normalize_team_id
 
 
 # Default output path for CSV files
 DEFAULT_OUTPUT_PATH = "data/demo_boxscores.csv"
-
-
-def _normalize_team_id(team_id: Any) -> Optional[int]:
-    """
-    Resolve a team identifier to a numeric team ID.
-
-    Args:
-        team_id: Team ID (int), abbreviation (e.g., 'LAL'), or team name
-
-    Returns:
-        Numeric team ID or None if not found
-    """
-    if team_id is None:
-        return None
-
-    # Already numeric
-    if isinstance(team_id, int):
-        return team_id
-
-    # Numeric string
-    if isinstance(team_id, str) and team_id.isdigit():
-        return int(team_id)
-
-    # Try abbreviation
-    if isinstance(team_id, str):
-        team_abbr = team_id.strip().upper()
-        found = teams.find_team_by_abbreviation(team_abbr)
-        if found:
-            return found["id"]
-
-        # Try full name
-        try:
-            found = teams.find_team_by_full_name(team_id.strip())
-            if found:
-                return found["id"]
-        except Exception:
-            pass
-
-    return None
 
 
 def _format_date_nba(date_str: str) -> str:
@@ -133,7 +95,7 @@ def fetch_team_games(
         >>> df = fetch_team_games('LAL', '2024-01-01', '2024-01-31')
         >>> print(df[['GAME_ID', 'GAME_DATE', 'MATCHUP', 'WL', 'PTS']])
     """
-    team_id_num = _normalize_team_id(team_id)
+    team_id_num = normalize_team_id(team_id)
     if team_id_num is None:
         print(f"Could not resolve team_id: {team_id!r}")
         return pd.DataFrame()
