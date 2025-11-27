@@ -15,7 +15,6 @@ CLI Usage:
     python lib/fetch_team_box_scores.py --team-id LAL --season 2023-24
 """
 import argparse
-import os
 from datetime import datetime
 from typing import Any, Optional
 
@@ -23,6 +22,7 @@ import pandas as pd
 
 from nba_api.stats.endpoints import leaguegamefinder
 
+from lib.helpers.csv_helpers import write_csv
 from lib.helpers.team_helpers import normalize_team_id
 
 
@@ -46,26 +46,6 @@ def _format_date_nba(date_str: str) -> str:
     except ValueError:
         # Already in correct format or invalid
         return date_str
-
-
-def write_csv(df: pd.DataFrame, output_path: str) -> None:
-    """
-    Write DataFrame to CSV file.
-
-    Args:
-        df: DataFrame to write
-        output_path: Path to output CSV file
-    """
-    try:
-        # Ensure directory exists
-        output_dir = os.path.dirname(output_path)
-        if output_dir and not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
-
-        df.to_csv(output_path, index=False)
-        print(f"Wrote {len(df)} rows to {output_path}")
-    except Exception as e:
-        print(f"Error writing to {output_path}: {e}")
 
 
 def fetch_team_games(

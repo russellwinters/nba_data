@@ -16,6 +16,7 @@ import argparse
 from nba_api.stats.endpoints import teamgamelogs
 from nba_api.stats.static import teams
 
+from lib.helpers.csv_helpers import write_csv
 from lib.helpers.team_helpers import normalize_team_id
 
 
@@ -167,21 +168,13 @@ def fetch_team_game_logs(
         season_part = season if season is not None else "all"
         output_path = f'data/team_{team_abbr or team_id_num}_games_{season_part}.csv'
 
-    # Try to write the DataFrame (including empty ones) to CSV so downstream
+    # Write the DataFrame (including empty ones) to CSV so downstream
     # steps are reproducible and consistent with `fetch_team_games`.
+    write_csv(df, output_path)
     try:
-        df.to_csv(output_path, index=False)
-        try:
-            rows, cols = df.shape
-            print(f"Wrote {output_path} ({rows} rows, {cols} cols)")
-        except Exception:
-            print(f"Wrote {output_path}")
-        try:
-            print(df.head())
-        except Exception:
-            pass
-    except Exception as e:
-        print(f"Failed to write CSV to {output_path}: {e}")
+        print(df.head())
+    except Exception:
+        pass
 
     return df
 
