@@ -55,7 +55,7 @@ nba_data/
 │   │   ├── fetch_team_game_logs.py   # Moved from lib/fetch_team_game_logs.py
 │   │   └── fetch_team_box_scores.py  # Moved from lib/fetch_team_box_scores.py
 │   ├── game/
-│   │   ├── __init__.py               # Exports: demo_boxscores functions
+│   │   ├── __init__.py               # Exports: boxscores functions
 │   │   └── boxscores.py              # Moved from lib/demo_boxscores.py (renamed)
 │   └── helpers/
 │       ├── __init__.py               # Unchanged
@@ -204,9 +204,9 @@ __all__ = [
        main()
    ```
 
-3. **Keep `fetch.py` as alias (optional deprecation)**
-   - Update `fetch.py` to import and call `lib.cli.main()` for backward compatibility
-   - Add deprecation warning for users of `fetch.py`
+3. **Remove `fetch.py`**
+   - Delete `fetch.py` from the repository root
+   - No deprecation needed since no MVP has been released
 
 ### Phase 4: Clean Up and Remove Old Files
 
@@ -220,6 +220,8 @@ __all__ = [
    - `lib/fetch_team_game_logs.py`
    - `lib/fetch_team_box_scores.py`
    - `lib/demo_boxscores.py`
+
+2. Remove `fetch.py` from repository root (replaced by `main.py`)
 
 ## Import Path Changes
 
@@ -267,28 +269,28 @@ from lib.helpers.team_helpers import normalize_team_id
 |------|------------|
 | Breaking existing imports | Maintain backward-compatible re-exports in `lib/__init__.py` |
 | Circular imports | Careful ordering of imports; use absolute imports |
-| Helper module path changes | `lib/helpers/` path stays the same; update imports in team modules |
-| CLI path confusion | Keep `fetch.py` as deprecated alias pointing to `lib.cli` |
+| Helper module path changes | `lib/helpers/` path stays the same; no import changes needed |
+| CLI entry point change | Replace `fetch.py` with `main.py`; update documentation |
 
-## Open Questions
+## Decisions
 
-1. **Should `fetch.py` be removed or kept as deprecated alias?**
-   - Recommendation: Keep as deprecated alias with warning for one release cycle
+The following decisions have been made:
 
-2. **Should `demo_boxscores.py` be renamed to just `boxscores.py`?**
-   - Recommendation: Yes, rename to `boxscores.py` since it's no longer a demo
+1. **Remove `fetch.py`**: Since no MVP has been released, there is no need for a deprecation cycle. The file will be removed entirely and replaced with `main.py`.
 
-3. **Should helpers move into relevant submodules?**
-   - Recommendation: Keep `lib/helpers/` as shared utilities for now; move if they become submodule-specific
+2. **Rename `demo_boxscores.py` to `boxscores.py`**: Confirmed. The file will be renamed to `boxscores.py` in the `lib/game/` submodule since it's no longer a demo.
+
+3. **Keep `lib/helpers/` as shared utilities**: Keep the helpers at `lib/helpers/` for now. This can be re-evaluated in the future if helpers become more submodule-specific.
 
 ## Acceptance Criteria
 
 - [ ] All modules are organized into `player/`, `team/`, `game/` submodules
 - [ ] `lib/cli.py` contains the CLI logic (moved from `fetch.py`)
 - [ ] `main.py` at root calls `lib.cli.main()`
+- [ ] `fetch.py` is removed from repository root
 - [ ] Backward-compatible imports work via `lib/__init__.py`
 - [ ] All existing CLI commands work unchanged
-- [ ] `python main.py --help` shows same output as `python fetch.py --help`
+- [ ] `python main.py --help` works correctly
 - [ ] README.md updated with new structure and usage examples
 
 ## Effort Estimate
