@@ -23,10 +23,10 @@ This document outlines a planned initiative to improve the code quality, maintai
 
 ### Shared Error Handling
 
-- [ ] Define a consistent error handling strategy across all fetching modules:
+- [x] Define a consistent error handling strategy across all fetching modules:
   - Decide whether to raise exceptions, return None/empty DataFrames, or use a custom result type
   - Standardize error messages and logging format
-- [ ] Create custom exception classes for common error scenarios (e.g., `PlayerNotFoundError`, `TeamNotFoundError`, `APIError`)
+- [x] Create custom exception classes for common error scenarios (e.g., `PlayerNotFoundError`, `TeamNotFoundError`, `APIError`)
 - [ ] Implement a shared error handler that can wrap API calls with consistent try/except patterns
 - [ ] Add input validation helpers to validate common parameters (player IDs, team IDs, season strings, dates)
 
