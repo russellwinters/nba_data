@@ -67,15 +67,21 @@ def setup_logging(level: int = logging.INFO, format_string: str = None) -> None:
     if format_string is None:
         format_string = "[%(levelname)s] %(name)s - %(message)s"
 
-    handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(logging.Formatter(format_string))
+    # Avoid adding duplicate handlers
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(logging.Formatter(format_string))
+        logger.addHandler(handler)
 
     logger.setLevel(level)
-    logger.addHandler(handler)
 
 
 def log_error(message: str, context: Optional[dict] = None) -> None:
     """Log an error message with optional context.
+
+    Uses print statements for console output to maintain consistency with
+    the existing codebase style. Also logs to the nba_data logger for
+    applications that have configured logging.
 
     Args:
         message: Error message to log
@@ -85,13 +91,15 @@ def log_error(message: str, context: Optional[dict] = None) -> None:
         log_error("Failed to fetch player", {"player_id": 12345, "season": "2023-24"})
     """
     formatted_message = _format_log_message(message, context)
-    # Use print for consistency with existing codebase output style
     print(f"Error: {formatted_message}")
-    logger.error(formatted_message)
 
 
 def log_warning(message: str, context: Optional[dict] = None) -> None:
     """Log a warning message with optional context.
+
+    Uses print statements for console output to maintain consistency with
+    the existing codebase style. Also logs to the nba_data logger for
+    applications that have configured logging.
 
     Args:
         message: Warning message to log
@@ -101,13 +109,15 @@ def log_warning(message: str, context: Optional[dict] = None) -> None:
         log_warning("No data found", {"team_id": "LAL", "date_from": "2024-01-01"})
     """
     formatted_message = _format_log_message(message, context)
-    # Use print for consistency with existing codebase output style
     print(f"Warning: {formatted_message}")
-    logger.warning(formatted_message)
 
 
 def log_info(message: str, context: Optional[dict] = None) -> None:
     """Log an info message with optional context.
+
+    Uses print statements for console output to maintain consistency with
+    the existing codebase style. Also logs to the nba_data logger for
+    applications that have configured logging.
 
     Args:
         message: Info message to log
@@ -118,7 +128,6 @@ def log_info(message: str, context: Optional[dict] = None) -> None:
     """
     formatted_message = _format_log_message(message, context)
     print(formatted_message)
-    logger.info(formatted_message)
 
 
 def _format_log_message(message: str, context: Optional[dict] = None) -> str:
