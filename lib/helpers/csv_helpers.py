@@ -1,7 +1,6 @@
 """CSV writing helper utilities."""
 
 import os
-from typing import Optional
 
 import pandas as pd
 
