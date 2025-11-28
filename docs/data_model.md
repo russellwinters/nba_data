@@ -29,57 +29,62 @@ The NBA Data CLI fetches data from the NBA Stats API and outputs CSV files. This
 
 ## Entity Relationship Diagram
 
-The diagram below shows relationships between tables. Tables use composite primary keys based on natural identifiers from the NBA API data (e.g., PLAYER_ID + GAME_ID uniquely identifies a player's box score for a game). This approach reflects how the API returns data and avoids the need for synthetic IDs.
+```
+                    ┌─────────────────┐
+                    │     Players     │
+                    ├─────────────────┤
+                    │ PK: id          │
+                    │ full_name       │
+                    │ first_name      │
+                    │ last_name       │
+                    │ is_active       │
+                    └────────┬────────┘
+                             │
+         ┌───────────────────┼───────────────────┐
+         │                   │                   │
+         ▼                   ▼                   ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ Player Game     │ │ Player Career   │ │ Player Box      │
+│ Logs            │ │ Stats           │ │ Scores          │
+├─────────────────┤ ├─────────────────┤ ├─────────────────┤
+│ FK: Player_ID   │ │ FK: PLAYER_ID   │ │ FK: PLAYER_ID   │
+│ Game_ID         │ │ SEASON_ID       │ │ FK: TEAM_ID ────┼──┐
+│ SEASON_ID       │ │ FK: TEAM_ID ────┼─┼─┐ GAME_ID       │  │
+│ GAME_DATE       │ │ Stats...        │ │ │ Stats...      │  │
+│ Stats...        │ │                 │ │ │               │  │
+└─────────────────┘ └─────────────────┘ │ └───────────────┘  │
+                                        │                    │
+                    ┌─────────────────┐ │                    │
+                    │     Teams       │ │                    │
+                    ├─────────────────┤ │                    │
+                    │ PK: id     ◄────┼─┴────────────────────┘
+                    │ full_name       │
+                    │ abbreviation    │
+                    │ nickname        │
+                    │ city, state     │
+                    │ year_founded    │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │ Team Game Box   │
+                    │ Scores          │
+                    ├─────────────────┤
+                    │ FK: TEAM_ID     │
+                    │ GAME_ID         │
+                    │ GAME_DATE       │
+                    │ MATCHUP         │
+                    │ Stats...        │
+                    └─────────────────┘
+```
 
-```
-┌─────────────┐         ┌─────────────────────┐
-│   Players   │         │       Teams         │
-├─────────────┤         ├─────────────────────┤
-│ PK: id      │         │ PK: id              │
-│ full_name   │         │ full_name           │
-│ first_name  │         │ abbreviation        │
-│ last_name   │         │ nickname            │
-│ is_active   │         │ city                │
-└──────┬──────┘         │ state               │
-       │                │ year_founded        │
-       │                └──────────┬──────────┘
-       │                           │
-       ├───────────────────────────┤
-       │                           │
-       ▼                           │
-┌────────────────────────────┐     │
-│     Player Game Logs       │     │
-├────────────────────────────┤     │
-│ PK: (Player_ID, Game_ID)   │     │
-│ FK: Player_ID ─────────────┼─────┘
-│ SEASON_ID                  │
-│ GAME_DATE, MATCHUP         │
-│ Stats columns...           │
-└────────────────────────────┘
-       │
-       ▼
-┌────────────────────────────────┐     ┌────────────────────────────┐
-│      Player Career Stats       │     │     Player Box Scores      │
-├────────────────────────────────┤     ├────────────────────────────┤
-│ PK: (PLAYER_ID, SEASON_ID,     │     │ PK: (GAME_ID, PLAYER_ID)   │
-│      TEAM_ID)                  │     │ FK: PLAYER_ID ─────────────┼───┐
-│ FK: PLAYER_ID ─────────────────┼──┐  │ FK: TEAM_ID ───────────────┼───┼──┐
-│ FK: TEAM_ID ───────────────────┼──┼┐ │ PLAYER_NAME                │   │  │
-│ Career stats...                │  ││ │ Stats columns...           │   │  │
-└────────────────────────────────┘  ││ └────────────────────────────┘   │  │
-                                    ││                                  │  │
-┌────────────────────────────────┐  ││                                  │  │
-│    Team Game Box Scores        │  ││                                  │  │
-├────────────────────────────────┤  ││                                  │  │
-│ PK: (TEAM_ID, GAME_ID)         │  ││                                  │  │
-│ FK: TEAM_ID ───────────────────┼──┼┼──────────────────────────────────┼──┤
-│ GAME_DATE, MATCHUP             │  ││                                  │  │
-│ Stats columns...               │  ││                                  │  │
-└────────────────────────────────┘  ││                                  │  │
-                                    ││                                  │  │
-                                    │└──► References Teams.id ◄─────────┼──┘
-                                    └────► References Players.id ◄──────┘
-```
+**Key relationships:**
+- **Players → Player Game Logs**: One player has many game logs (one per game played)
+- **Players → Player Career Stats**: One player has many career stat records (one per season/team)
+- **Players → Player Box Scores**: One player has many box scores (one per game)
+- **Teams → Player Career Stats**: One team appears in many player career records
+- **Teams → Player Box Scores**: One team appears in many player box scores
+- **Teams → Team Game Box Scores**: One team has many game box scores
 
 ---
 
