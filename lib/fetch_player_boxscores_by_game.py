@@ -18,12 +18,13 @@ Example:
 """
 
 import argparse
-import os
 from typing import Optional
 
 import pandas as pd
 
 from nba_api.stats.endpoints import boxscoretraditionalv3
+
+from lib.helpers.csv_helpers import write_csv
 
 
 # Default output path for player box score CSV files
@@ -152,25 +153,6 @@ def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _write_csv(df: pd.DataFrame, output_path: str) -> None:
-    """Write DataFrame to CSV file.
-
-    Args:
-        df: DataFrame to write
-        output_path: Path to output CSV file
-    """
-    try:
-        # Ensure directory exists
-        output_dir = os.path.dirname(output_path)
-        if output_dir and not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
-
-        df.to_csv(output_path, index=False)
-        print(f"Wrote {len(df)} rows to {output_path}")
-    except Exception as e:
-        print(f"Error writing to {output_path}: {e}")
-
-
 def get_player_boxscores(
     game_id: str,
     timeout: int = 30,
@@ -245,7 +227,7 @@ def fetch_player_boxscores_by_game(
         print(f"No player box score data found for game {game_id}")
         return df
 
-    _write_csv(df, output_path)
+    write_csv(df, output_path)
 
     # Show preview
     try:
