@@ -26,10 +26,11 @@ Example:
 """
 
 import functools
+import inspect
 import random
 import socket
 import time
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Any, Callable, Optional, Tuple, Type, TypeVar, Union
 
 import pandas as pd
 import requests
@@ -227,7 +228,6 @@ def api_endpoint_wrapper(
         def wrapper(*args, **kwargs) -> Union[T, pd.DataFrame]:
             # Inject timeout into kwargs if the function accepts it
             # Check if function signature accepts timeout
-            import inspect
             sig = inspect.signature(func)
             if "timeout" in sig.parameters and "timeout" not in kwargs:
                 kwargs["timeout"] = timeout
@@ -374,8 +374,11 @@ def api_endpoint_wrapper(
             if last_exception is not None:
                 raise last_exception
 
-            # Should not reach here, but return empty DataFrame as fallback
-            return pd.DataFrame() if return_empty_df_on_error else None
+            # Should not reach here, this is a logical error
+            raise RuntimeError(
+                f"Unexpected state in api_endpoint_wrapper for {func_name}: "
+                "no result and no exception"
+            )
 
         return wrapper
 
@@ -388,7 +391,7 @@ def with_retry(
     initial_delay: float = DEFAULT_INITIAL_DELAY,
     max_delay: float = DEFAULT_MAX_DELAY,
     jitter: bool = DEFAULT_JITTER,
-    retryable_exceptions: tuple = None,
+    retryable_exceptions: Optional[Tuple[Type[Exception], ...]] = None,
     log_retries: bool = True,
 ) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """Decorator for adding retry logic to any function.
@@ -465,8 +468,11 @@ def with_retry(
             if last_exception is not None:
                 raise last_exception
 
-            # Should not reach here
-            return None
+            # Should not reach here, this is a logical error
+            raise RuntimeError(
+                f"Unexpected state in with_retry for {func_name}: "
+                "no result and no exception"
+            )
 
         return wrapper
 
