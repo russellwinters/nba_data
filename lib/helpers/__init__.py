@@ -1,6 +1,7 @@
 """Shared helper utilities for the nba_data project."""
 
 from lib.helpers.csv_helpers import write_csv
+from lib.helpers.date_helpers import format_date_nba
 from lib.helpers.team_helpers import normalize_team_id
 from lib.helpers.exceptions import (
     NBADataError,
@@ -27,7 +28,10 @@ from lib.helpers.error_handling import (
 __all__ = [
     # Team helpers
     "normalize_team_id",
+    # CSV helpers
     "write_csv",
+    # Date helpers
+    "format_date_nba",
     # Exceptions
     "NBADataError",
     "EntityNotFoundError",

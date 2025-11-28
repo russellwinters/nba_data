@@ -18,7 +18,7 @@ This document outlines a planned initiative to improve the code quality, maintai
 - [x] Create a `lib/helpers/` directory for shared utility functions
 - [x] Extract `_normalize_team_id()` into a shared helper (currently duplicated in `fetch_team_box_scores.py` and `fetch_team_game_logs.py`)
 - [x] Create a shared CSV writing utility that handles directory creation, error handling, and consistent logging
-- [ ] Create a shared date formatting utility (e.g., `_format_date_nba()` from `fetch_team_box_scores.py`)
+- [x] Create a shared date formatting utility (e.g., `_format_date_nba()` from `fetch_team_box_scores.py`)
 - [ ] Consider a common base pattern or decorator for API endpoint wrappers that handles timeouts, retries, and error logging
 
 ### Shared Error Handling

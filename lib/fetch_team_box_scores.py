@@ -15,7 +15,6 @@ CLI Usage:
     python lib/fetch_team_box_scores.py --team-id LAL --season 2023-24
 """
 import argparse
-from datetime import datetime
 from typing import Any, Optional
 
 import pandas as pd
@@ -23,29 +22,12 @@ import pandas as pd
 from nba_api.stats.endpoints import leaguegamefinder
 
 from lib.helpers.csv_helpers import write_csv
+from lib.helpers.date_helpers import format_date_nba
 from lib.helpers.team_helpers import normalize_team_id
 
 
 # Default output path for CSV files
 DEFAULT_OUTPUT_PATH = "data/demo_boxscores.csv"
-
-
-def _format_date_nba(date_str: str) -> str:
-    """
-    Convert date string to NBA API format (MM/DD/YYYY).
-
-    Args:
-        date_str: Date in YYYY-MM-DD format
-
-    Returns:
-        Date in MM/DD/YYYY format
-    """
-    try:
-        dt = datetime.strptime(date_str, "%Y-%m-%d")
-        return dt.strftime("%m/%d/%Y")
-    except ValueError:
-        # Already in correct format or invalid
-        return date_str
 
 
 def fetch_team_games(
@@ -87,9 +69,9 @@ def fetch_team_games(
     }
 
     if date_from:
-        kwargs["date_from_nullable"] = _format_date_nba(date_from)
+        kwargs["date_from_nullable"] = format_date_nba(date_from)
     if date_to:
-        kwargs["date_to_nullable"] = _format_date_nba(date_to)
+        kwargs["date_to_nullable"] = format_date_nba(date_to)
     if season:
         kwargs["season_nullable"] = season
 
