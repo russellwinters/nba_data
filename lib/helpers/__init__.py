@@ -20,6 +20,8 @@ from lib.helpers.error_handling import (
     handle_api_errors,
     safe_api_call,
     setup_logging,
+    api_error_handler,
+    convert_exception,
 )
 
 __all__ = [
@@ -43,4 +45,6 @@ __all__ = [
     "handle_api_errors",
     "safe_api_call",
     "setup_logging",
+    "api_error_handler",
+    "convert_exception",
 ]
