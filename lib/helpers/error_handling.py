@@ -230,12 +230,18 @@ def handle_api_errors(func: Callable[..., pd.DataFrame]) -> Callable[..., pd.Dat
     - Conversion of exceptions to empty DataFrames for recoverable errors
     - Re-raising of critical errors (ValidationError, EntityNotFoundError)
 
-    The decorator automatically converts these exception types:
-    - requests.exceptions.Timeout -> APITimeoutError
-    - requests.exceptions.ConnectionError -> APIError
-    - requests.exceptions.HTTPError (429) -> APIRateLimitError
-    - requests.exceptions.HTTPError (other) -> APIError
-    - socket.timeout -> APITimeoutError
+    The decorator handles BOTH:
+    1. Custom exceptions (APITimeoutError, APIError, etc.) - for functions that
+       have already converted their exceptions
+    2. Native network exceptions (requests.exceptions.Timeout, etc.) - for functions
+       that use libraries like nba_api which raise standard exceptions
+
+    The following exception types are automatically handled:
+    - requests.exceptions.Timeout -> logs and returns empty DataFrame
+    - requests.exceptions.ConnectionError -> logs and returns empty DataFrame
+    - requests.exceptions.HTTPError (429) -> logs rate limit and returns empty DataFrame
+    - requests.exceptions.HTTPError (other) -> logs and returns empty DataFrame
+    - socket.timeout -> logs and returns empty DataFrame
 
     Args:
         func: Function that makes API calls and returns a DataFrame
@@ -313,6 +319,7 @@ def handle_api_errors(func: Callable[..., pd.DataFrame]) -> Callable[..., pd.Dat
 def api_error_handler(
     context: Optional[dict] = None,
     reraise: bool = False,
+    endpoint: Optional[str] = None,
 ) -> Generator[None, None, None]:
     """Context manager for handling API errors with consistent behavior.
 
@@ -327,11 +334,13 @@ def api_error_handler(
     Args:
         context: Optional dictionary of contextual information for logging
         reraise: If True, re-raises the exception after logging. Default is False.
+        endpoint: Optional endpoint name for exception context (used when converting
+                 exceptions to provide additional context)
 
     Example:
         from lib.helpers.error_handling import api_error_handler
 
-        with api_error_handler(context={"player_id": 12345}):
+        with api_error_handler(context={"player_id": 12345}, endpoint="fetch_player"):
             result = api_endpoint.get_data()
 
         # With re-raising:
@@ -350,9 +359,9 @@ def api_error_handler(
     except (requests.exceptions.Timeout, socket.timeout) as e:
         log_error("API timeout", context)
         if reraise:
-            raise convert_exception(e) from e
+            raise convert_exception(e, endpoint=endpoint) from e
     except requests.exceptions.HTTPError as e:
-        converted = convert_exception(e)
+        converted = convert_exception(e, endpoint=endpoint)
         if isinstance(converted, APIRateLimitError):
             log_error("API rate limit exceeded", context)
         else:
@@ -362,7 +371,7 @@ def api_error_handler(
     except requests.exceptions.RequestException as e:
         log_error(f"Request error: {e}", context)
         if reraise:
-            raise convert_exception(e) from e
+            raise convert_exception(e, endpoint=endpoint) from e
     except Exception as e:
         log_error(f"Unexpected error: {e}", context)
         if reraise:
