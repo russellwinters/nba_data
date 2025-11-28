@@ -277,15 +277,13 @@ def handle_api_errors(func: Callable[..., pd.DataFrame]) -> Callable[..., pd.Dat
             # (e.g., ValidationError, PlayerNotFoundError)
             raise
         except (requests.exceptions.Timeout, socket.timeout) as e:
-            # Convert to custom exception and handle
-            converted = convert_exception(e, endpoint=func.__name__)
             log_error(
                 f"API timeout in {func.__name__}",
                 {"error": str(e)},
             )
             return pd.DataFrame()
         except requests.exceptions.HTTPError as e:
-            # Convert to custom exception and handle
+            # Convert to check for rate limiting and extract status code
             converted = convert_exception(e, endpoint=func.__name__)
             if isinstance(converted, APIRateLimitError):
                 log_error(
@@ -295,7 +293,7 @@ def handle_api_errors(func: Callable[..., pd.DataFrame]) -> Callable[..., pd.Dat
             else:
                 log_error(
                     f"HTTP error in {func.__name__}",
-                    {"status": getattr(converted, "status_code", None), "error": str(e)},
+                    {"status": converted.status_code, "error": str(e)},
                 )
             return pd.DataFrame()
         except requests.exceptions.RequestException as e:
@@ -350,10 +348,9 @@ def api_error_handler(
         # Always re-raise NBADataError subclasses
         raise
     except (requests.exceptions.Timeout, socket.timeout) as e:
-        converted = convert_exception(e)
         log_error("API timeout", context)
         if reraise:
-            raise converted from e
+            raise convert_exception(e) from e
     except requests.exceptions.HTTPError as e:
         converted = convert_exception(e)
         if isinstance(converted, APIRateLimitError):
@@ -363,10 +360,9 @@ def api_error_handler(
         if reraise:
             raise converted from e
     except requests.exceptions.RequestException as e:
-        converted = convert_exception(e)
         log_error(f"Request error: {e}", context)
         if reraise:
-            raise converted from e
+            raise convert_exception(e) from e
     except Exception as e:
         log_error(f"Unexpected error: {e}", context)
         if reraise:
