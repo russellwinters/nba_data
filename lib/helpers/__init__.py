@@ -24,6 +24,10 @@ from lib.helpers.error_handling import (
     api_error_handler,
     convert_exception,
 )
+from lib.helpers.api_wrapper import (
+    api_endpoint_wrapper,
+    with_retry,
+)
 
 __all__ = [
     # Team helpers
@@ -51,4 +55,7 @@ __all__ = [
     "setup_logging",
     "api_error_handler",
     "convert_exception",
+    # API wrapper utilities
+    "api_endpoint_wrapper",
+    "with_retry",
 ]
