@@ -481,7 +481,7 @@ def weekly_career_stats_update():
     """Update career stats for all active players."""
     # Get active player IDs
     players_df = pd.read_csv('data/players.csv')
-    active_ids = players_df[players_df['is_active'] == True]['id'].tolist()
+    active_ids = players_df[players_df['is_active']]['id'].tolist()
     
     # Fetch in batches with rate limiting
     for i, player_id in enumerate(active_ids):
