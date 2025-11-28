@@ -11,8 +11,6 @@ Available subcommands:
     players           Fetch all NBA players
     teams             Fetch all NBA teams
     player-games      Fetch a player's game log for a specific season
-    team-games        Fetch a team's game log for a specific season
-    team-game-logs    Fetch a team's filtered game logs (TeamGameLogs)
     team-game-boxscores  Fetch team games within a date range (LeagueGameFinder)
     player-stats      Fetch a player's career statistics
     player-boxscores  Fetch player box scores for a specific game
@@ -21,8 +19,6 @@ Available subcommands:
 Examples:
     python fetch.py players --output data/players.csv
     python fetch.py player-games --player-id 2544 --season 2022-23
-    python fetch.py team-games --team-id LAL --season 2022-23
-    python fetch.py team-game-logs --team-id LAL --season 2022-23 --season-type "Regular Season" --output data/lakers_2023.csv
     python fetch.py team-game-boxscores --team-id LAL --date-from 2024-01-01 --date-to 2024-01-31
     python fetch.py player-boxscores --game-id 0022400123 --output data/player_boxscores.csv
     python fetch.py read-stats players.csv
@@ -34,8 +30,6 @@ import sys
 from lib.fetch_players import fetch_players
 from lib.fetch_teams import fetch_teams
 from lib.fetch_player_games import fetch_player_games
-from lib.fetch_team_games import fetch_team_games
-from lib.fetch_team_game_logs import fetch_team_game_logs
 from lib.fetch_player_stats import fetch_player_stats
 from lib.fetch_player_boxscores_by_game import fetch_player_boxscores_by_game
 from lib.read_stats import read_stats
@@ -94,51 +88,6 @@ def create_parser():
     parser_player_games.add_argument(
         '--output',
         help='Output CSV file path (default: data/{player_id}_games_{season}.csv)'
-    )
-    
-    # team-games subcommand
-    parser_team_games = subparsers.add_parser(
-        'team-games',
-        help='Fetch a team\'s game log for a specific season'
-    )
-    parser_team_games.add_argument(
-        '--team-id',
-        required=True,
-        help='NBA team abbreviation (e.g., "PHI", "LAL")'
-    )
-    parser_team_games.add_argument(
-        '--season',
-        required=True,
-        help='Season string (e.g., "2018", "2022-23")'
-    )
-    parser_team_games.add_argument(
-        '--output',
-        help='Output CSV file path (default: data/team_{team_id}_games_{season}.csv)'
-    )
-
-    # team-game-logs subcommand (uses TeamGameLogs — more flexible filters)
-    parser_team_game_logs = subparsers.add_parser(
-        'team-game-logs',
-        help='Fetch a team\'s filtered game logs (TeamGameLogs) and save to CSV'
-    )
-    parser_team_game_logs.add_argument(
-        '--team-id',
-        dest='team_id',
-        required=True,
-        help='Team identifier: numeric id, abbreviation (e.g. "LAL"), or full team name',
-    )
-    parser_team_game_logs.add_argument(
-        '--season',
-        help='Season string (e.g., "2022-23"). Optional; forwarded to the endpoint as season_nullable',
-    )
-    parser_team_game_logs.add_argument(
-        '--season-type',
-        dest='season_type',
-        help='Optional season type forwarded to the endpoint (e.g. "Regular Season")',
-    )
-    parser_team_game_logs.add_argument(
-        '--output',
-        help='Output CSV file path (optional). If provided, saves DataFrame to this path',
     )
 
     # team-game-boxscores subcommand (uses LeagueGameFinder — date range based)
@@ -245,41 +194,6 @@ def main():
                 season=args.season,
                 output_path=args.output
             )
-        
-        elif args.command == 'team-games':
-            fetch_team_games(
-                team_id=args.team_id,
-                season=args.season,
-                output_path=args.output
-            )
-
-        elif args.command == 'team-game-logs':
-            # fetch_team_game_logs returns a pandas DataFrame; write it if requested
-            try:
-                df = fetch_team_game_logs(
-                    team_id=args.team_id,
-                    season=args.season,
-                    season_type=args.season_type,
-                )
-            except TypeError:
-                # Backwards-compatible: if the wrapper signature differs, call with positional args
-                df = fetch_team_game_logs(args.team_id, args.season)
-
-            if df is None or (hasattr(df, 'empty') and df.empty):
-                print(f"No game-log data returned for {args.team_id} (season={args.season})")
-            else:
-                if getattr(args, 'output', None):
-                    try:
-                        df.to_csv(args.output, index=False)
-                        print(f"Wrote {args.output} ({getattr(df, 'shape', ('?', '?'))[0]} rows)")
-                    except Exception as e:
-                        print(f"Failed to write CSV to {args.output}: {e}")
-                else:
-                    # Show a short preview when no output file requested
-                    try:
-                        print(df.head())
-                    except Exception:
-                        print(df)
 
         elif args.command == 'team-game-boxscores':
             # If --date is provided, use it for both date_from and date_to
