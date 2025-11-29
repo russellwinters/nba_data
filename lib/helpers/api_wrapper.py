@@ -25,7 +25,7 @@ Usage:
 import functools
 import socket
 import time
-from typing import Callable, Optional, TypeVar, Union
+from typing import Callable, Optional
 
 import pandas as pd
 import requests
@@ -37,9 +37,6 @@ from lib.helpers.exceptions import (
     APITimeoutError,
     NBADataError,
 )
-
-# Type variable for generic function return type
-T = TypeVar("T")
 
 # Default configuration values
 DEFAULT_TIMEOUT = 30
@@ -56,7 +53,7 @@ def api_endpoint(
     backoff_factor: float = DEFAULT_BACKOFF_FACTOR,
     max_retry_delay: float = DEFAULT_MAX_RETRY_DELAY,
     on_error: str = "empty_dataframe",
-) -> Callable[[Callable[..., T]], Callable[..., T]]:
+) -> Callable[[Callable[..., pd.DataFrame]], Callable[..., pd.DataFrame]]:
     """Decorator for API endpoint wrappers with timeout, retry, and error handling.
 
     This decorator provides a consistent pattern for wrapping NBA API calls with:
@@ -108,9 +105,9 @@ def api_endpoint(
             return api_call()
     """
 
-    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+    def decorator(func: Callable[..., pd.DataFrame]) -> Callable[..., pd.DataFrame]:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs) -> T:
+        def wrapper(*args, **kwargs) -> pd.DataFrame:
             last_exception: Optional[Exception] = None
             attempts = 0
             current_delay = retry_delay
@@ -120,11 +117,16 @@ def api_endpoint(
                     return func(*args, **kwargs)
 
                 except NBADataError as e:
-                    # Don't retry validation errors or entity not found errors
-                    # These are not transient and won't succeed on retry
-                    if not isinstance(e, (APITimeoutError, APIRateLimitError, APIError)):
+                    # Non-retryable errors: ValidationError, EntityNotFoundError, etc.
+                    # These represent programming errors or missing data that won't
+                    # succeed on retry - re-raise them immediately
+                    # 
+                    # Retryable errors: APITimeoutError, APIRateLimitError, APIError
+                    # These may be transient network/server issues that can succeed on retry
+                    is_retryable = isinstance(e, (APITimeoutError, APIRateLimitError, APIError))
+                    if not is_retryable:
                         raise
-                    # API errors may be transient, continue to retry logic
+                    # Continue to retry logic for API errors
                     last_exception = e
                     _log_retry_error(func.__name__, e, attempts, max_retries)
 
