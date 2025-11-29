@@ -26,6 +26,7 @@ from nba_api.stats.endpoints import boxscoretraditionalv3
 
 from lib.helpers.csv_helpers import write_csv
 from lib.helpers.validation import validate_game_id
+from lib.helpers.api_wrapper import api_endpoint
 
 
 # Default output path for player box score CSV files
@@ -154,6 +155,7 @@ def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+@api_endpoint(timeout=30)
 def get_player_boxscores(
     game_id: str,
     timeout: int = 30,
@@ -181,27 +183,23 @@ def get_player_boxscores(
     # Validate inputs
     game_id = validate_game_id(game_id)
     
-    try:
-        boxscore = boxscoretraditionalv3.BoxScoreTraditionalV3(
-            game_id=game_id,
-            timeout=timeout,
-        )
-        dfs = boxscore.get_data_frames()
+    boxscore = boxscoretraditionalv3.BoxScoreTraditionalV3(
+        game_id=game_id,
+        timeout=timeout,
+    )
+    dfs = boxscore.get_data_frames()
 
-        # First DataFrame contains player stats
-        if dfs and len(dfs) >= 1:
-            player_df = dfs[0]
-            if player_df is not None and not player_df.empty:
-                # Add GAME_ID column if not present
-                if "gameId" not in player_df.columns and "GAME_ID" not in player_df.columns:
-                    player_df["GAME_ID"] = game_id
+    # First DataFrame contains player stats
+    if dfs and len(dfs) >= 1:
+        player_df = dfs[0]
+        if player_df is not None and not player_df.empty:
+            # Add GAME_ID column if not present
+            if "gameId" not in player_df.columns and "GAME_ID" not in player_df.columns:
+                player_df["GAME_ID"] = game_id
 
-                # Normalize column names
-                player_df = _normalize_columns(player_df)
-                return player_df
-
-    except Exception as e:
-        print(f"Error fetching player box scores for game {game_id}: {e}")
+            # Normalize column names
+            player_df = _normalize_columns(player_df)
+            return player_df
 
     return pd.DataFrame()
 

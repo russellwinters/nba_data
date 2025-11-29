@@ -25,12 +25,14 @@ from lib.helpers.csv_helpers import write_csv
 from lib.helpers.date_helpers import format_date_nba
 from lib.helpers.team_helpers import normalize_team_id
 from lib.helpers.validation import validate_team_id, validate_date, validate_season
+from lib.helpers.api_wrapper import api_endpoint
 
 
 # Default output path for CSV files
 DEFAULT_OUTPUT_PATH = "data/demo_boxscores.csv"
 
 
+@api_endpoint(timeout=30)
 def fetch_team_games(
     team_id: Any,
     date_from: Optional[str] = None,
@@ -86,13 +88,10 @@ def fetch_team_games(
     if season:
         kwargs["season_nullable"] = season
 
-    try:
-        finder = leaguegamefinder.LeagueGameFinder(**kwargs)
-        dfs = finder.get_data_frames()
-        if dfs:
-            return dfs[0]
-    except Exception as e:
-        print(f"Error finding games: {e}")
+    finder = leaguegamefinder.LeagueGameFinder(**kwargs)
+    dfs = finder.get_data_frames()
+    if dfs:
+        return dfs[0]
 
     return pd.DataFrame()
 
