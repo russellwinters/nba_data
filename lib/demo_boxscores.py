@@ -49,8 +49,10 @@ from nba_api.stats.endpoints import (
 
 from lib.helpers.date_helpers import format_date_nba
 from lib.helpers.team_helpers import normalize_team_id
+from lib.helpers.api_wrapper import api_endpoint
 
 
+@api_endpoint(timeout=30)
 def find_games_by_team_and_date(
     team_id: Any,
     date_from: Optional[str] = None,
@@ -96,17 +98,15 @@ def find_games_by_team_and_date(
     if season:
         kwargs["season_nullable"] = season
 
-    try:
-        finder = leaguegamefinder.LeagueGameFinder(**kwargs)
-        dfs = finder.get_data_frames()
-        if dfs:
-            return dfs[0]
-    except Exception as e:
-        print(f"Error finding games: {e}")
+    finder = leaguegamefinder.LeagueGameFinder(**kwargs)
+    dfs = finder.get_data_frames()
+    if dfs:
+        return dfs[0]
 
     return pd.DataFrame()
 
 
+@api_endpoint(timeout=30)
 def find_games_by_date(
     game_date: str,
     timeout: int = 30,
@@ -125,17 +125,14 @@ def find_games_by_date(
         >>> df = find_games_by_date('2024-01-15')
         >>> print(df[['GAME_ID', 'HOME_TEAM_ID', 'VISITOR_TEAM_ID']])
     """
-    try:
-        scoreboard = scoreboardv2.ScoreboardV2(
-            game_date=game_date,
-            timeout=timeout,
-        )
-        dfs = scoreboard.get_data_frames()
-        # First DataFrame is GameHeader
-        if dfs:
-            return dfs[0]
-    except Exception as e:
-        print(f"Error fetching scoreboard: {e}")
+    scoreboard = scoreboardv2.ScoreboardV2(
+        game_date=game_date,
+        timeout=timeout,
+    )
+    dfs = scoreboard.get_data_frames()
+    # First DataFrame is GameHeader
+    if dfs:
+        return dfs[0]
 
     return pd.DataFrame()
 
