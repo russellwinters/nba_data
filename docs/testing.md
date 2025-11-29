@@ -95,14 +95,15 @@ Mock data fixtures are defined in `tests/conftest.py` and provide realistic NBA 
 ```
 nba_data/
 ├── tests/
-│   ├── __init__.py           # Test package marker
-│   ├── conftest.py           # Shared fixtures and mock data
-│   ├── test_date_helpers.py  # Tests for date formatting utilities
-│   ├── test_team_helpers.py  # Tests for team ID normalization
-│   ├── test_csv_helpers.py   # Tests for CSV writing utilities
-│   └── test_validation.py    # Tests for input validation
-├── pytest.ini                # pytest configuration
-└── requirements.txt          # Includes test dependencies
+│   ├── __init__.py              # Test package marker
+│   ├── conftest.py              # Shared fixtures and mock data
+│   ├── test_csv_helpers.py      # Tests for CSV writing utilities
+│   ├── test_date_helpers.py     # Tests for date formatting utilities
+│   ├── test_fetch_integration.py # Integration tests for fetching modules
+│   ├── test_team_helpers.py     # Tests for team ID normalization
+│   └── test_validation.py       # Tests for input validation
+├── pytest.ini                   # pytest configuration
+└── requirements.txt             # Includes test dependencies
 ```
 
 ## Running Tests
@@ -196,7 +197,7 @@ responses>=0.25.0
 
 ## Future Enhancements
 
-- [ ] Add integration tests for fetching modules with mocked HTTP responses
+- [x] Add integration tests for fetching modules with mocked HTTP responses
 - [ ] Add CLI tests for argument parsing and command routing
 - [ ] Add test coverage reporting with `pytest-cov`
 - [ ] Add GitHub Actions workflow for automated testing
