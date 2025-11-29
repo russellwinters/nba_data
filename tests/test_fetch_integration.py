@@ -596,11 +596,9 @@ class TestFetchPlayerBoxscoresByGame:
         result = get_player_boxscores(game_id="0022400123")
 
         # Check that columns were normalized
-        assert 'GAME_ID' in result.columns
-        assert 'PLAYER_ID' in result.columns
-        assert 'PLAYER_NAME' in result.columns
-        assert 'TEAM_ID' in result.columns
-        assert 'TEAM_ABBREVIATION' in result.columns
+        expected_columns = ['GAME_ID', 'PLAYER_ID', 'PLAYER_NAME', 'TEAM_ID', 'TEAM_ABBREVIATION']
+        for col in expected_columns:
+            assert col in result.columns, f"Expected column {col} not found"
 
 
 # =============================================================================
