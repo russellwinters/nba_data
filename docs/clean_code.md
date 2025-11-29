@@ -34,7 +34,7 @@ This document outlines a planned initiative to improve the code quality, maintai
 
 - [x] Set up a test framework (e.g., pytest) in the repository
 - [x] Create mock fixtures for NBA API responses to avoid making actual API calls
-- [ ] Add unit tests for helper functions (team ID normalization, date formatting, CSV writing)
+- [x] Add unit tests for helper functions (team ID normalization, date formatting, CSV writing)
 - [ ] Add integration tests for each fetching module using mocked API responses
 - [ ] Add CLI tests to verify argument parsing and command routing in `fetch.py`
 - [ ] Consider using `responses` or `unittest.mock` to mock HTTP requests from `nba_api`
