@@ -24,10 +24,52 @@ from nba_api.stats.endpoints import leaguegamefinder
 from lib.helpers.csv_helpers import write_csv
 from lib.helpers.date_helpers import format_date_nba
 from lib.helpers.team_helpers import normalize_team_id
+from lib.helpers.api_wrapper import api_endpoint_wrapper
 
 
 # Default output path for CSV files
 DEFAULT_OUTPUT_PATH = "data/demo_boxscores.csv"
+
+
+@api_endpoint_wrapper(timeout=30, max_retries=3, return_empty_df_on_error=True)
+def _fetch_games_from_api(
+    team_id_num: int,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    season: Optional[str] = None,
+    timeout: int = 30,
+) -> pd.DataFrame:
+    """
+    Internal function to fetch games from NBA API.
+    
+    Args:
+        team_id_num: Numeric team ID
+        date_from: Start date in NBA format (optional)
+        date_to: End date in NBA format (optional)
+        season: Season string (optional)
+        timeout: Request timeout in seconds
+        
+    Returns:
+        DataFrame containing game data
+    """
+    kwargs = {
+        "player_or_team_abbreviation": "T",
+        "team_id_nullable": team_id_num,
+        "timeout": timeout,
+    }
+
+    if date_from:
+        kwargs["date_from_nullable"] = date_from
+    if date_to:
+        kwargs["date_to_nullable"] = date_to
+    if season:
+        kwargs["season_nullable"] = season
+
+    finder = leaguegamefinder.LeagueGameFinder(**kwargs)
+    dfs = finder.get_data_frames()
+    if dfs:
+        return dfs[0]
+    return pd.DataFrame()
 
 
 def fetch_team_games(
@@ -62,28 +104,18 @@ def fetch_team_games(
         print(f"Could not resolve team_id: {team_id!r}")
         return pd.DataFrame()
 
-    kwargs = {
-        "player_or_team_abbreviation": "T",
-        "team_id_nullable": team_id_num,
-        "timeout": timeout,
-    }
+    # Format dates for the API
+    formatted_date_from = format_date_nba(date_from) if date_from else None
+    formatted_date_to = format_date_nba(date_to) if date_to else None
 
-    if date_from:
-        kwargs["date_from_nullable"] = format_date_nba(date_from)
-    if date_to:
-        kwargs["date_to_nullable"] = format_date_nba(date_to)
-    if season:
-        kwargs["season_nullable"] = season
-
-    try:
-        finder = leaguegamefinder.LeagueGameFinder(**kwargs)
-        dfs = finder.get_data_frames()
-        if dfs:
-            return dfs[0]
-    except Exception as e:
-        print(f"Error finding games: {e}")
-
-    return pd.DataFrame()
+    # Fetch using decorated function
+    return _fetch_games_from_api(
+        team_id_num=team_id_num,
+        date_from=formatted_date_from,
+        date_to=formatted_date_to,
+        season=season,
+        timeout=timeout,
+    )
 
 
 def main():

@@ -25,6 +25,7 @@ import pandas as pd
 from nba_api.stats.endpoints import boxscoretraditionalv3
 
 from lib.helpers.csv_helpers import write_csv
+from lib.helpers.api_wrapper import api_endpoint_wrapper
 
 
 # Default output path for player box score CSV files
@@ -153,6 +154,39 @@ def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+@api_endpoint_wrapper(timeout=30, max_retries=3, return_empty_df_on_error=True)
+def _fetch_boxscore_from_api(game_id: str, timeout: int = 30) -> pd.DataFrame:
+    """
+    Internal function to fetch box score from NBA API.
+    
+    Args:
+        game_id: NBA game ID (e.g., '0022400123')
+        timeout: Request timeout in seconds
+        
+    Returns:
+        DataFrame containing player box scores
+    """
+    boxscore = boxscoretraditionalv3.BoxScoreTraditionalV3(
+        game_id=game_id,
+        timeout=timeout,
+    )
+    dfs = boxscore.get_data_frames()
+
+    # First DataFrame contains player stats
+    if dfs and len(dfs) >= 1:
+        player_df = dfs[0]
+        if player_df is not None and not player_df.empty:
+            # Add GAME_ID column if not present
+            if "gameId" not in player_df.columns and "GAME_ID" not in player_df.columns:
+                player_df["GAME_ID"] = game_id
+
+            # Normalize column names
+            player_df = _normalize_columns(player_df)
+            return player_df
+
+    return pd.DataFrame()
+
+
 def get_player_boxscores(
     game_id: str,
     timeout: int = 30,
@@ -174,29 +208,7 @@ def get_player_boxscores(
         >>> df = get_player_boxscores('0022400123')
         >>> print(df[['PLAYER_NAME', 'TEAM_ABBREVIATION', 'PTS', 'REB', 'AST']])
     """
-    try:
-        boxscore = boxscoretraditionalv3.BoxScoreTraditionalV3(
-            game_id=game_id,
-            timeout=timeout,
-        )
-        dfs = boxscore.get_data_frames()
-
-        # First DataFrame contains player stats
-        if dfs and len(dfs) >= 1:
-            player_df = dfs[0]
-            if player_df is not None and not player_df.empty:
-                # Add GAME_ID column if not present
-                if "gameId" not in player_df.columns and "GAME_ID" not in player_df.columns:
-                    player_df["GAME_ID"] = game_id
-
-                # Normalize column names
-                player_df = _normalize_columns(player_df)
-                return player_df
-
-    except Exception as e:
-        print(f"Error fetching player box scores for game {game_id}: {e}")
-
-    return pd.DataFrame()
+    return _fetch_boxscore_from_api(game_id, timeout)
 
 
 def fetch_player_boxscores_by_game(
