@@ -1,9 +1,28 @@
 from nba_api.stats.endpoints import playergamelog
 from nba_api.stats.static import players
 import argparse
+import pandas as pd
 
 from lib.helpers.csv_helpers import write_csv
 from lib.helpers.validation import validate_player_id, validate_season
+from lib.helpers.api_wrapper import api_endpoint
+
+
+@api_endpoint(timeout=30)
+def _fetch_player_game_log(player_id: int, season: str) -> pd.DataFrame:
+    """Fetch game log for a player from the NBA API.
+    
+    Args:
+        player_id: The NBA player ID
+        season: Season string (e.g., '2005', '2022-23')
+        
+    Returns:
+        DataFrame containing game log data
+    """
+    regular_season_game_log = playergamelog.PlayerGameLog(
+        player_id=player_id, season=season, timeout=30
+    )
+    return regular_season_game_log.get_data_frames()[0]
 
 
 def fetch_player_games(player_id: int, season: str, output_path=None):
@@ -30,10 +49,12 @@ def fetch_player_games(player_id: int, season: str, output_path=None):
     if player:
         player_id = player['id']
 
-        # Fetch the player's game log
-        regular_season_game_log = playergamelog.PlayerGameLog(player_id=player_id, season=season)
-
-        game_data = regular_season_game_log.get_data_frames()[0]
+        # Fetch the player's game log using the decorated function
+        game_data = _fetch_player_game_log(player_id, season)
+        
+        if game_data.empty:
+            print("Error fetching game log")
+            return None
         
         # Write the game data to a CSV file
         if output_path is None:

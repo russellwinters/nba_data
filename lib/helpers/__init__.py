@@ -31,6 +31,7 @@ from lib.helpers.validation import (
     validate_date,
     validate_game_id,
 )
+from lib.helpers.api_wrapper import api_endpoint
 
 __all__ = [
     # Team helpers
@@ -64,4 +65,6 @@ __all__ = [
     "validate_season",
     "validate_date",
     "validate_game_id",
+    # API wrapper decorator
+    "api_endpoint",
 ]
