@@ -25,6 +25,7 @@ import pandas as pd
 from nba_api.stats.endpoints import boxscoretraditionalv3
 
 from lib.helpers.csv_helpers import write_csv
+from lib.helpers.validation import validate_game_id
 
 
 # Default output path for player box score CSV files
@@ -170,10 +171,16 @@ def get_player_boxscores(
         DataFrame containing player box scores with canonical column names,
         or an empty DataFrame if the request fails.
 
+    Raises:
+        ValidationError: If game_id is invalid
+
     Example:
         >>> df = get_player_boxscores('0022400123')
         >>> print(df[['PLAYER_NAME', 'TEAM_ABBREVIATION', 'PTS', 'REB', 'AST']])
     """
+    # Validate inputs
+    game_id = validate_game_id(game_id)
+    
     try:
         boxscore = boxscoretraditionalv3.BoxScoreTraditionalV3(
             game_id=game_id,

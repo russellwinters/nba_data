@@ -3,6 +3,7 @@ from nba_api.stats.static import players
 import argparse
 
 from lib.helpers.csv_helpers import write_csv
+from lib.helpers.validation import validate_player_id
 
 
 def fetch_player_stats(player_id: int, output_path=None):
@@ -16,7 +17,13 @@ def fetch_player_stats(player_id: int, output_path=None):
         
     Returns:
         DataFrame containing career stats, or None if player not found
+        
+    Raises:
+        ValidationError: If player_id is invalid
     """
+    # Validate inputs
+    player_id = validate_player_id(player_id)
+    
     player = players.find_player_by_id(player_id)
     if player:
         player_id = player['id']
