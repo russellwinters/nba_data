@@ -3,6 +3,21 @@ import pandas as pd
 import argparse
 
 from lib.helpers.csv_helpers import write_csv
+from lib.helpers.api_wrapper import api_endpoint_wrapper
+
+
+@api_endpoint_wrapper(max_retries=3, return_empty_df_on_error=True)
+def _fetch_players_data() -> pd.DataFrame:
+    """
+    Internal function to fetch player data from NBA API static data.
+    
+    Returns:
+        DataFrame containing player data
+    """
+    all_players = players.get_players()
+    if all_players:
+        return pd.DataFrame(all_players)
+    return pd.DataFrame()
 
 
 def fetch_players(output_path='data/players.csv'):
@@ -15,8 +30,12 @@ def fetch_players(output_path='data/players.csv'):
     Returns:
         DataFrame containing player data
     """
-    all_players = players.get_players()
-    df = pd.DataFrame(all_players)
+    df = _fetch_players_data()
+    
+    if df.empty:
+        print("No player data found")
+        return df
+    
     write_csv(df, output_path)
     print(df)
     return df
