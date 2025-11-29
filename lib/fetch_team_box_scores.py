@@ -24,6 +24,7 @@ from nba_api.stats.endpoints import leaguegamefinder
 from lib.helpers.csv_helpers import write_csv
 from lib.helpers.date_helpers import format_date_nba
 from lib.helpers.team_helpers import normalize_team_id
+from lib.helpers.validation import validate_team_id, validate_date, validate_season
 
 
 # Default output path for CSV files
@@ -53,10 +54,20 @@ def fetch_team_games(
     Returns:
         DataFrame containing game data with GAME_ID, GAME_DATE, MATCHUP, etc.
 
+    Raises:
+        ValidationError: If team_id, dates, or season are invalid
+
     Example:
         >>> df = fetch_team_games('LAL', '2024-01-01', '2024-01-31')
         >>> print(df[['GAME_ID', 'GAME_DATE', 'MATCHUP', 'WL', 'PTS']])
     """
+    # Validate inputs
+    team_id = validate_team_id(team_id)
+    date_from = validate_date(date_from, parameter_name="date_from", allow_none=True)
+    date_to = validate_date(date_to, parameter_name="date_to", allow_none=True)
+    if season is not None:
+        season = validate_season(season)
+    
     team_id_num = normalize_team_id(team_id)
     if team_id_num is None:
         print(f"Could not resolve team_id: {team_id!r}")

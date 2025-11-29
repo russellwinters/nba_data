@@ -28,7 +28,7 @@ This document outlines a planned initiative to improve the code quality, maintai
   - Standardize error messages and logging format
 - [x] Create custom exception classes for common error scenarios (e.g., `PlayerNotFoundError`, `TeamNotFoundError`, `APIError`)
 - [x] Implement a shared error handler that can wrap API calls with consistent try/except patterns
-- [ ] Add input validation helpers to validate common parameters (player IDs, team IDs, season strings, dates)
+- [x] Add input validation helpers to validate common parameters (player IDs, team IDs, season strings, dates)
 
 ### Testing
 
