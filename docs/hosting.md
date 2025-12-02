@@ -22,6 +22,11 @@ This document outlines options for hosting the NBA Data CLI application in the c
   - [Option C: S3 Object Existence Check](#option-c-s3-object-existence-check)
 - [Comparison Summary](#comparison-summary)
 - [Recommendations](#recommendations)
+- [Decisions](#decisions)
+  - [Decision 1: MVP — Local Hosting with Cron Jobs](#decision-1-mvp--local-hosting-with-cron-jobs)
+  - [Decision 2: Data Store Module with Progressive Storage](#decision-2-data-store-module-with-progressive-storage)
+  - [Decision 3: Eventual Plan — Spot Instances with S3 Storage](#decision-3-eventual-plan--spot-instances-with-s3-storage)
+  - [Decision 4: Fetch Tracking with Per-Module Timestamps](#decision-4-fetch-tracking-with-per-module-timestamps)
 - [Implementation Roadmap](#implementation-roadmap)
 
 ---
@@ -907,29 +912,163 @@ EventBridge → Lambda (launcher) → EC2 Spot → S3
 
 ---
 
+## Decisions
+
+This section captures the architectural decisions for implementing the NBA Data CLI hosting and data management strategy.
+
+### Decision 1: MVP — Local Hosting with Cron Jobs
+
+For the initial MVP, the application will run locally using cron jobs for scheduling. This approach:
+
+- **Minimizes complexity**: No cloud infrastructure setup required to start
+- **Enables rapid iteration**: Easy to develop, debug, and test locally
+- **Defers cloud costs**: No AWS charges until the system is proven
+
+**Rationale**: Getting the core data fetching and storage logic working locally is the priority. Cloud deployment can follow once the data pipeline is stable.
+
+### Decision 2: Data Store Module with Progressive Storage
+
+A `data_store` module will be created to abstract data persistence:
+
+- **Phase 1 — Local Files**: Data is written to local files in a `data/` directory (git-ignored)
+- **Phase 2 — S3 Integration**: The module will be extended to write to S3, keeping the same interface
+
+**Benefits**:
+- Clean separation of concerns between fetching and storage
+- Easy testing without cloud dependencies
+- Smooth migration path to S3 when ready
+
+**Implementation Notes**:
+- Add `data/` to `.gitignore` to prevent local data files from being committed
+- The module should support both local and S3 backends via configuration or environment variables
+
+### Decision 3: Eventual Plan — Spot Instances with S3 Storage
+
+The production deployment will use EC2 Spot Instances with S3 for data storage:
+
+- **Containerization**: The Python application will be Dockerized for consistent deployment
+- **Spot Instances**: Scheduled via EventBridge/Lambda launcher for cost efficiency
+- **S3 Storage**: All fetched data persisted to S3 with date-partitioned structure
+
+**Scheduling Approach**: Use EventBridge to trigger a Lambda function that launches a spot instance. The spot instance runs the containerized fetch job, uploads results to S3, and self-terminates.
+
+### Decision 4: Fetch Tracking with Per-Module Timestamps
+
+A tracking system will monitor when data was last fetched for each module, with different update frequencies:
+
+#### Update Frequency Strategy
+
+| Data Type | Update Frequency | Strategy |
+|-----------|------------------|----------|
+| **Teams** | Yearly | Fetch once per year, overwrite existing file in S3/locally |
+| **Players** | Yearly | Fetch once per year, overwrite existing file in S3/locally |
+| **Career Stats** | Weekly/Monthly | Overwrite existing file in S3/locally with latest cumulative data |
+| **Game Boxscores** | Daily (during season) | Generate a new CSV for the time range and add to the directory (S3/locally) |
+| **Player Game Logs** | Daily (during season) | Generate a new CSV for the time range and add to the directory (S3/locally) |
+
+#### Tracking File Format
+
+A simple JSON or CSV file will track fetch metadata:
+
+```json
+{
+  "modules": {
+    "teams": {
+      "last_fetched": "2024-01-15T06:00:00Z",
+      "update_frequency": "yearly",
+      "strategy": "overwrite"
+    },
+    "players": {
+      "last_fetched": "2024-01-15T06:05:00Z",
+      "update_frequency": "yearly",
+      "strategy": "overwrite"
+    },
+    "career_stats": {
+      "last_fetched": "2024-01-20T06:00:00Z",
+      "update_frequency": "weekly",
+      "strategy": "overwrite"
+    },
+    "game_boxscores": {
+      "last_fetched": "2024-01-21T06:00:00Z",
+      "last_game_date": "2024-01-20",
+      "update_frequency": "daily",
+      "strategy": "append"
+    },
+    "player_game_logs": {
+      "last_fetched": "2024-01-21T06:00:00Z",
+      "last_game_date": "2024-01-20",
+      "update_frequency": "daily",
+      "strategy": "append"
+    }
+  }
+}
+```
+
+#### Fetch Tracker Implementation Plan
+
+1. **Parse**: Load the tracking file at the start of each fetch operation
+2. **Check**: Determine if a fetch is needed based on `last_fetched` and `update_frequency`
+3. **Fetch**: If needed, fetch data using appropriate date ranges
+   - For "append" strategies, use `last_game_date` to determine the start date for fetching
+   - For "overwrite" strategies, fetch all data and replace existing files
+4. **Update**: After successful fetch, update the tracking file with new timestamps
+
+**Date Range Handling**:
+- For daily append operations (boxscores, game logs), calculate the date range from `last_game_date + 1 day` to today
+- For overwrite operations, fetch all available data regardless of previous fetches
+
+---
+
 ## Implementation Roadmap
 
-### Phase 1: S3 Setup (Week 1)
+### Phase 1: Local MVP Setup (Week 1-2)
 
-- [ ] Create S3 bucket with appropriate structure
-- [ ] Configure bucket policy and IAM roles
-- [ ] Implement S3 upload helper in `lib/helpers/s3_upload.py`
-- [ ] Set up lifecycle policies for cost management
+- [ ] Create `data/` directory and add to `.gitignore`
+- [ ] Implement `data_store` module with local file backend
+  - [ ] Create `lib/data_store/__init__.py`
+  - [ ] Implement `save()` and `load()` functions for CSV data
+  - [ ] Add configuration for output directory
+- [ ] Create fetch tracking file (`data/fetch_tracker.json`)
+  - [ ] Implement tracker parsing and update logic
+  - [ ] Add `should_fetch()` helper based on update frequency
+- [ ] Set up local cron job configuration
+  - [ ] Create example crontab entries in `scripts/crontab.example`
+  - [ ] Document cron setup in README or separate doc
 
-### Phase 2: State Tracking (Week 2)
+### Phase 2: Fetch Tracker Integration (Week 3)
 
-- [ ] Implement chosen state tracking mechanism
-- [ ] Add deduplication logic to fetch commands
+- [ ] Integrate fetch tracker with existing fetch commands
+- [ ] Implement date range filtering for append strategies
+  - [ ] Modify `fetch_player_games.py` to accept date range parameters
+  - [ ] Modify `fetch_team_box_scores.py` to accept date range parameters
+- [ ] Add deduplication logic to prevent redundant fetches
 - [ ] Test idempotency of fetch operations
 
-### Phase 3: Lambda Deployment (Week 3)
+### Phase 3: S3 Integration (Week 4)
 
-- [ ] Create Lambda functions for each fetch type
-- [ ] Package dependencies as Lambda layer
-- [ ] Set up EventBridge schedules
-- [ ] Configure CloudWatch alarms for failures
+- [ ] Extend `data_store` module to support S3 backend
+  - [ ] Add boto3 dependency to requirements.txt
+  - [ ] Implement S3 save/load functions
+  - [ ] Add backend selection via environment variable
+- [ ] Configure S3 bucket structure as documented
+- [ ] Set up IAM roles and bucket policies
+- [ ] Set up lifecycle policies for cost management
 
-### Phase 4: Production Hardening (Week 4)
+### Phase 4: Containerization (Week 5)
+
+- [ ] Create Dockerfile for the application
+- [ ] Test container locally with docker-compose
+- [ ] Document container build and run process
+- [ ] Push container image to ECR (or Docker Hub for testing)
+
+### Phase 5: Spot Instance Deployment (Week 6)
+
+- [ ] Create EC2 launch template for spot instances
+- [ ] Create Lambda function to launch spot instances
+- [ ] Set up EventBridge schedules for automated execution
+- [ ] Implement self-termination in spot instance user data script
+
+### Phase 6: Production Hardening (Week 7-8)
 
 - [ ] Add comprehensive logging
 - [ ] Implement retry logic for transient failures
@@ -951,3 +1090,4 @@ EventBridge → Lambda (launcher) → EC2 Spot → S3
 | Date | Author | Description |
 |------|--------|-------------|
 | 2024-12-02 | Copilot | Initial hosting planning document |
+| 2024-12-02 | Copilot | Added Decisions section and updated Implementation Roadmap |
