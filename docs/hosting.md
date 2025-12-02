@@ -960,11 +960,11 @@ A tracking system will monitor when data was last fetched for each module, with 
 
 | Data Type | Update Frequency | Strategy |
 |-----------|------------------|----------|
-| **Teams** | Yearly | Fetch once per year, overwrite existing data |
-| **Players** | Yearly | Fetch once per year, overwrite existing data |
-| **Career Stats** | Weekly/Monthly | Overwrite with latest cumulative data |
-| **Game Boxscores** | Daily (during season) | Append new games, never overwrite historical |
-| **Player Game Logs** | Daily (during season) | Append new games, never overwrite historical |
+| **Teams** | Yearly | Fetch once per year, overwrite existing file in S3/locally |
+| **Players** | Yearly | Fetch once per year, overwrite existing file in S3/locally |
+| **Career Stats** | Weekly/Monthly | Overwrite existing file in S3/locally with latest cumulative data |
+| **Game Boxscores** | Daily (during season) | Generate a new CSV for the time range and add to the directory (S3/locally) |
+| **Player Game Logs** | Daily (during season) | Generate a new CSV for the time range and add to the directory (S3/locally) |
 
 #### Tracking File Format
 
