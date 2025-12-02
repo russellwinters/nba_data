@@ -101,6 +101,7 @@ plugins:
 
 ```python
 # handler.py
+import os
 import boto3
 import json
 from datetime import datetime
@@ -408,6 +409,10 @@ DATA_TYPE=$1
 DATE=$(date +%Y-%m-%d)
 S3_BUCKET="nba-data-bucket"
 
+# Load team list from config file (more maintainable than hardcoding)
+# For production, consider: TEAMS=$(python -c "from lib.fetch_teams import get_team_abbreviations; print(' '.join(get_team_abbreviations()))")
+TEAMS="ATL BOS BKN CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS"
+
 case $DATA_TYPE in
   "players")
     python fetch.py players --output data/players.csv
@@ -415,7 +420,7 @@ case $DATA_TYPE in
     ;;
   "team-games")
     YESTERDAY=$(date -d "yesterday" +%Y-%m-%d)
-    for TEAM in ATL BOS BKN CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS; do
+    for TEAM in $TEAMS; do
       python fetch.py team-game-boxscores --team-id $TEAM --date $YESTERDAY --output data/${TEAM}_games.csv
       aws s3 cp data/${TEAM}_games.csv s3://$S3_BUCKET/team-games/$YESTERDAY/${TEAM}.csv
       sleep 3  # Rate limiting
@@ -429,6 +434,8 @@ esac
 
 echo "$(date): Completed $DATA_TYPE fetch" >> /var/log/nba-data/fetch.log
 ```
+
+**Note:** For production use, consider loading team abbreviations dynamically from the database or a configuration file instead of hardcoding them. This makes the script more maintainable when teams are added or relocated.
 
 #### Pros
 
