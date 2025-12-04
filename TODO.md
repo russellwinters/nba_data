@@ -1,4 +1,3 @@
- - [ ] Grt fetch_team_games to fetch data
- - [ ] Model the data we're getting for all these stats
- - [ ] Add `get_request` option to all `lib/fetch_*` request wrappers (make it opt-in, default behavior unchanged)
- - [ ] After adding `get_request`, implement tests (use mocks) to verify request construction and behavior
+ - [X] Get fetch_team_games to fetch data
+ - [x] Model the data we're getting for all these stats
+ 
