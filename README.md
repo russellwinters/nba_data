@@ -118,8 +118,7 @@ python fetch.py read-stats players.csv
 ```
 ## Tasks
 
-Check simple [TODO](TODO.md) for task list
-
+Check docs and plans directories for stuff on the go. This should be organized better.
 
 ## Project Structure
 
