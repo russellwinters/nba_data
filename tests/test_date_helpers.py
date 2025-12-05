@@ -6,52 +6,41 @@ from lib.helpers.date_helpers import format_date_nba
 
 
 class TestFormatDateNba:
-    """Tests for the format_date_nba function."""
-
     def test_format_date_nba_valid_iso_format(self):
         """Test conversion from YYYY-MM-DD to MM/DD/YYYY format."""
         result = format_date_nba("2024-01-15")
         assert result == "01/15/2024"
 
     def test_format_date_nba_beginning_of_year(self):
-        """Test formatting January 1st."""
         result = format_date_nba("2024-01-01")
         assert result == "01/01/2024"
 
     def test_format_date_nba_end_of_year(self):
-        """Test formatting December 31st."""
         result = format_date_nba("2024-12-31")
         assert result == "12/31/2024"
 
     def test_format_date_nba_mid_year(self):
-        """Test formatting a mid-year date."""
         result = format_date_nba("2023-06-15")
         assert result == "06/15/2023"
 
     def test_format_date_nba_already_nba_format(self):
-        """Test that dates already in NBA format are returned unchanged."""
         result = format_date_nba("01/15/2024")
         assert result == "01/15/2024"
 
     def test_format_date_nba_invalid_format_returned_unchanged(self):
-        """Test that invalid date formats are returned unchanged."""
         result = format_date_nba("15-01-2024")
         assert result == "15-01-2024"
 
     def test_format_date_nba_empty_string_returned_unchanged(self):
-        """Test that empty string is returned unchanged."""
         result = format_date_nba("")
         assert result == ""
 
     def test_format_date_nba_random_string_returned_unchanged(self):
-        """Test that random strings are returned unchanged."""
         result = format_date_nba("not-a-date")
         assert result == "not-a-date"
 
 
 class TestFormatDateNbaParametrized:
-    """Parametrized tests for format_date_nba function."""
-
     @pytest.mark.parametrize("input_date,expected", [
         ("2024-01-01", "01/01/2024"),
         ("2024-02-29", "02/29/2024"),  # Leap year
@@ -67,7 +56,6 @@ class TestFormatDateNbaParametrized:
         ("2024-12-25", "12/25/2024"),
     ])
     def test_format_date_nba_all_months(self, input_date, expected):
-        """Test date formatting for dates in all months."""
         assert format_date_nba(input_date) == expected
 
     @pytest.mark.parametrize("input_date", [
@@ -79,6 +67,5 @@ class TestFormatDateNbaParametrized:
         "abcd-ef-gh",  # Not a date
     ])
     def test_format_date_nba_invalid_dates_returned_unchanged(self, input_date):
-        """Test that invalid dates are returned unchanged."""
         result = format_date_nba(input_date)
         assert result == input_date

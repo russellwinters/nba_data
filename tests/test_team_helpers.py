@@ -9,22 +9,18 @@ class TestNormalizeTeamId:
     """Tests for the normalize_team_id function."""
 
     def test_normalize_team_id_with_integer(self):
-        """Test that integer team IDs are returned as-is."""
         result = normalize_team_id(1610612747)
         assert result == 1610612747
 
     def test_normalize_team_id_with_numeric_string(self):
-        """Test that numeric string team IDs are converted to int."""
         result = normalize_team_id("1610612747")
         assert result == 1610612747
 
     def test_normalize_team_id_with_none(self):
-        """Test that None returns None."""
         result = normalize_team_id(None)
         assert result is None
 
     def test_normalize_team_id_with_abbreviation(self, mocker, mock_lakers_team):
-        """Test team ID lookup by abbreviation."""
         mocker.patch(
             'lib.helpers.team_helpers.teams.find_team_by_abbreviation',
             return_value=mock_lakers_team
@@ -34,7 +30,6 @@ class TestNormalizeTeamId:
         assert result == 1610612747
 
     def test_normalize_team_id_with_lowercase_abbreviation(self, mocker, mock_lakers_team):
-        """Test team ID lookup by lowercase abbreviation (should be case-insensitive)."""
         mocker.patch(
             'lib.helpers.team_helpers.teams.find_team_by_abbreviation',
             return_value=mock_lakers_team
@@ -68,7 +63,6 @@ class TestNormalizeTeamId:
         assert result == 1610612747
 
     def test_normalize_team_id_abbreviation_not_found(self, mocker):
-        """Test that unknown abbreviation tries full name lookup and returns None."""
         mocker.patch(
             'lib.helpers.team_helpers.teams.find_team_by_abbreviation',
             return_value=None
@@ -83,7 +77,6 @@ class TestNormalizeTeamId:
         assert result is None
 
     def test_normalize_team_id_full_name_not_found(self, mocker):
-        """Test that unknown full name returns None."""
         mocker.patch(
             'lib.helpers.team_helpers.teams.find_team_by_abbreviation',
             return_value=None
@@ -98,7 +91,6 @@ class TestNormalizeTeamId:
         assert result is None
 
     def test_normalize_team_id_with_whitespace(self, mocker, mock_lakers_team):
-        """Test that whitespace is stripped from abbreviation."""
         mocker.patch(
             'lib.helpers.team_helpers.teams.find_team_by_abbreviation',
             return_value=mock_lakers_team
@@ -109,7 +101,6 @@ class TestNormalizeTeamId:
 
 
 class TestNormalizeTeamIdParametrized:
-    """Parametrized tests for normalize_team_id function."""
 
     @pytest.mark.parametrize("team_id", [
         1610612747,  # Lakers
@@ -119,7 +110,6 @@ class TestNormalizeTeamIdParametrized:
         1610612751,  # Nets
     ])
     def test_normalize_team_id_with_various_integers(self, team_id):
-        """Test that various integer team IDs are returned as-is."""
         assert normalize_team_id(team_id) == team_id
 
     @pytest.mark.parametrize("numeric_string,expected", [
@@ -129,5 +119,4 @@ class TestNormalizeTeamIdParametrized:
         ("1", 1),
     ])
     def test_normalize_team_id_with_various_numeric_strings(self, numeric_string, expected):
-        """Test that various numeric strings are converted correctly."""
         assert normalize_team_id(numeric_string) == expected
