@@ -350,3 +350,105 @@ def sample_dataframe_with_special_chars():
         "name": ["O'Brien", "Smith, Jr.", "Davis \"The Beast\""],
         "value": [100, 200, 300],
     })
+
+
+# =============================================================================
+# Reusable Mock Fixtures for Integration Tests
+# =============================================================================
+
+@pytest.fixture
+def mock_player_stats_dependencies(mocker, mock_lebron_player, mock_player_career_stats):
+    """Set up common mocks for fetch_player_stats tests.
+    
+    Returns a dict with references to key mocks for assertions.
+    """
+    mocker.patch(
+        'lib.fetch_player_stats.players.find_player_by_id',
+        return_value=mock_lebron_player
+    )
+    mocker.patch(
+        'lib.fetch_player_stats._fetch_career_stats',
+        return_value=mock_player_career_stats
+    )
+    mock_write_csv = mocker.patch('lib.fetch_player_stats.write_csv', return_value=True)
+    mocker.patch('builtins.print')
+    
+    return {
+        'write_csv': mock_write_csv,
+        'player': mock_lebron_player,
+        'career_stats': mock_player_career_stats,
+    }
+
+
+@pytest.fixture
+def mock_player_games_dependencies(mocker, mock_lebron_player, mock_player_game_log_response):
+    """Set up common mocks for fetch_player_games tests.
+    
+    Returns a dict with references to key mocks for assertions.
+    """
+    mocker.patch(
+        'lib.fetch_player_games.players.find_player_by_id',
+        return_value=mock_lebron_player
+    )
+    mocker.patch(
+        'lib.fetch_player_games._fetch_player_game_log',
+        return_value=mock_player_game_log_response
+    )
+    mock_write_csv = mocker.patch('lib.fetch_player_games.write_csv', return_value=True)
+    mocker.patch('builtins.print')
+    
+    return {
+        'write_csv': mock_write_csv,
+        'player': mock_lebron_player,
+        'game_log': mock_player_game_log_response,
+    }
+
+
+@pytest.fixture
+def mock_team_games_dependencies(mocker, mock_game_finder_response):
+    """Set up common mocks for fetch_team_box_scores tests.
+    
+    Returns a dict with references to key mocks for assertions.
+    """
+    mocker.patch(
+        'lib.fetch_team_box_scores.normalize_team_id',
+        return_value=1610612747
+    )
+    mock_finder = mocker.MagicMock()
+    mock_finder.get_data_frames.return_value = [mock_game_finder_response]
+    mock_game_finder = mocker.patch(
+        'lib.fetch_team_box_scores.leaguegamefinder.LeagueGameFinder',
+        return_value=mock_finder
+    )
+    mocker.patch('builtins.print')
+    
+    return {
+        'game_finder': mock_game_finder,
+        'finder_instance': mock_finder,
+        'response': mock_game_finder_response,
+    }
+
+
+@pytest.fixture
+def mock_boxscore_dependencies(mocker, mock_player_boxscore_response):
+    """Set up common mocks for fetch_player_boxscores_by_game tests.
+    
+    Returns a dict with references to key mocks for assertions.
+    """
+    mock_boxscore = mocker.MagicMock()
+    mock_boxscore.get_data_frames.return_value = [mock_player_boxscore_response]
+    mocker.patch(
+        'lib.fetch_player_boxscores_by_game.boxscoretraditionalv3.BoxScoreTraditionalV3',
+        return_value=mock_boxscore
+    )
+    mock_write_csv = mocker.patch(
+        'lib.fetch_player_boxscores_by_game.write_csv',
+        return_value=True
+    )
+    mocker.patch('builtins.print')
+    
+    return {
+        'boxscore': mock_boxscore,
+        'write_csv': mock_write_csv,
+        'response': mock_player_boxscore_response,
+    }

@@ -188,20 +188,9 @@ class TestFetchPlayerStats:
     """Integration tests for fetch_player_stats module."""
 
     def test_fetch_player_stats_returns_dataframe(
-        self, mocker, mock_lebron_player, mock_player_career_stats, tmp_path
+        self, mock_player_stats_dependencies, tmp_path
     ):
         """Test that fetch_player_stats returns a DataFrame with career stats."""
-        mocker.patch(
-            'lib.fetch_player_stats.players.find_player_by_id',
-            return_value=mock_lebron_player
-        )
-        mocker.patch(
-            'lib.fetch_player_stats._fetch_career_stats',
-            return_value=mock_player_career_stats
-        )
-        mocker.patch('lib.fetch_player_stats.write_csv', return_value=True)
-        mocker.patch('builtins.print')
-
         from lib.fetch_player_stats import fetch_player_stats
 
         output_path = str(tmp_path / "career.csv")
@@ -247,50 +236,28 @@ class TestFetchPlayerStats:
         assert result is None
 
     def test_fetch_player_stats_writes_csv(
-        self, mocker, mock_lebron_player, mock_player_career_stats, tmp_path
+        self, mock_player_stats_dependencies, tmp_path
     ):
         """Test that fetch_player_stats calls write_csv with correct arguments."""
-        mocker.patch(
-            'lib.fetch_player_stats.players.find_player_by_id',
-            return_value=mock_lebron_player
-        )
-        mocker.patch(
-            'lib.fetch_player_stats._fetch_career_stats',
-            return_value=mock_player_career_stats
-        )
-        mock_write_csv = mocker.patch('lib.fetch_player_stats.write_csv', return_value=True)
-        mocker.patch('builtins.print')
-
         from lib.fetch_player_stats import fetch_player_stats
 
         output_path = str(tmp_path / "career.csv")
         fetch_player_stats(player_id=2544, output_path=output_path)
 
-        mock_write_csv.assert_called_once()
-        call_args = mock_write_csv.call_args
+        mock_player_stats_dependencies['write_csv'].assert_called_once()
+        call_args = mock_player_stats_dependencies['write_csv'].call_args
         assert call_args[0][1] == output_path
 
     def test_fetch_player_stats_default_output_path(
-        self, mocker, mock_lebron_player, mock_player_career_stats
+        self, mock_player_stats_dependencies
     ):
         """Test fetch_player_stats uses default output path when none specified."""
-        mocker.patch(
-            'lib.fetch_player_stats.players.find_player_by_id',
-            return_value=mock_lebron_player
-        )
-        mocker.patch(
-            'lib.fetch_player_stats._fetch_career_stats',
-            return_value=mock_player_career_stats
-        )
-        mock_write_csv = mocker.patch('lib.fetch_player_stats.write_csv', return_value=True)
-        mocker.patch('builtins.print')
-
         from lib.fetch_player_stats import fetch_player_stats
 
         fetch_player_stats(player_id=2544)
 
-        mock_write_csv.assert_called_once()
-        call_args = mock_write_csv.call_args
+        mock_player_stats_dependencies['write_csv'].assert_called_once()
+        call_args = mock_player_stats_dependencies['write_csv'].call_args
         assert call_args[0][1] == 'data/2544_career.csv'
 
 
@@ -303,20 +270,9 @@ class TestFetchPlayerGames:
     """Integration tests for fetch_player_games module."""
 
     def test_fetch_player_games_returns_dataframe(
-        self, mocker, mock_lebron_player, mock_player_game_log_response, tmp_path
+        self, mock_player_games_dependencies, tmp_path
     ):
         """Test that fetch_player_games returns a DataFrame with game data."""
-        mocker.patch(
-            'lib.fetch_player_games.players.find_player_by_id',
-            return_value=mock_lebron_player
-        )
-        mocker.patch(
-            'lib.fetch_player_games._fetch_player_game_log',
-            return_value=mock_player_game_log_response
-        )
-        mocker.patch('lib.fetch_player_games.write_csv', return_value=True)
-        mocker.patch('builtins.print')
-
         from lib.fetch_player_games import fetch_player_games
 
         output_path = str(tmp_path / "games.csv")
@@ -362,67 +318,34 @@ class TestFetchPlayerGames:
         assert result is None
 
     def test_fetch_player_games_writes_csv(
-        self, mocker, mock_lebron_player, mock_player_game_log_response, tmp_path
+        self, mock_player_games_dependencies, tmp_path
     ):
         """Test that fetch_player_games calls write_csv with correct arguments."""
-        mocker.patch(
-            'lib.fetch_player_games.players.find_player_by_id',
-            return_value=mock_lebron_player
-        )
-        mocker.patch(
-            'lib.fetch_player_games._fetch_player_game_log',
-            return_value=mock_player_game_log_response
-        )
-        mock_write_csv = mocker.patch('lib.fetch_player_games.write_csv', return_value=True)
-        mocker.patch('builtins.print')
-
         from lib.fetch_player_games import fetch_player_games
 
         output_path = str(tmp_path / "games.csv")
         fetch_player_games(player_id=2544, season="2023-24", output_path=output_path)
 
-        mock_write_csv.assert_called_once()
-        call_args = mock_write_csv.call_args
+        mock_player_games_dependencies['write_csv'].assert_called_once()
+        call_args = mock_player_games_dependencies['write_csv'].call_args
         assert call_args[0][1] == output_path
 
     def test_fetch_player_games_default_output_path(
-        self, mocker, mock_lebron_player, mock_player_game_log_response
+        self, mock_player_games_dependencies
     ):
         """Test fetch_player_games uses default output path when none specified."""
-        mocker.patch(
-            'lib.fetch_player_games.players.find_player_by_id',
-            return_value=mock_lebron_player
-        )
-        mocker.patch(
-            'lib.fetch_player_games._fetch_player_game_log',
-            return_value=mock_player_game_log_response
-        )
-        mock_write_csv = mocker.patch('lib.fetch_player_games.write_csv', return_value=True)
-        mocker.patch('builtins.print')
-
         from lib.fetch_player_games import fetch_player_games
 
         fetch_player_games(player_id=2544, season="2023-24")
 
-        mock_write_csv.assert_called_once()
-        call_args = mock_write_csv.call_args
+        mock_player_games_dependencies['write_csv'].assert_called_once()
+        call_args = mock_player_games_dependencies['write_csv'].call_args
         assert call_args[0][1] == 'data/2544_games_2023-24.csv'
 
     def test_fetch_player_games_contains_expected_stats(
-        self, mocker, mock_lebron_player, mock_player_game_log_response, tmp_path
+        self, mock_player_games_dependencies, tmp_path
     ):
         """Test that returned DataFrame contains expected game stats columns."""
-        mocker.patch(
-            'lib.fetch_player_games.players.find_player_by_id',
-            return_value=mock_lebron_player
-        )
-        mocker.patch(
-            'lib.fetch_player_games._fetch_player_game_log',
-            return_value=mock_player_game_log_response
-        )
-        mocker.patch('lib.fetch_player_games.write_csv', return_value=True)
-        mocker.patch('builtins.print')
-
         from lib.fetch_player_games import fetch_player_games
 
         output_path = str(tmp_path / "games.csv")
@@ -442,16 +365,9 @@ class TestFetchPlayerBoxscoresByGame:
     """Integration tests for fetch_player_boxscores_by_game module."""
 
     def test_get_player_boxscores_returns_dataframe(
-        self, mocker, mock_player_boxscore_response
+        self, mock_boxscore_dependencies
     ):
         """Test that get_player_boxscores returns a DataFrame with box score data."""
-        mock_boxscore = mocker.MagicMock()
-        mock_boxscore.get_data_frames.return_value = [mock_player_boxscore_response]
-        mocker.patch(
-            'lib.fetch_player_boxscores_by_game.boxscoretraditionalv3.BoxScoreTraditionalV3',
-            return_value=mock_boxscore
-        )
-
         from lib.fetch_player_boxscores_by_game import get_player_boxscores
 
         result = get_player_boxscores(game_id="0022400123")
@@ -492,28 +408,16 @@ class TestFetchPlayerBoxscoresByGame:
         assert len(result) == 0
 
     def test_fetch_player_boxscores_by_game_writes_csv(
-        self, mocker, mock_player_boxscore_response, tmp_path
+        self, mock_boxscore_dependencies, tmp_path
     ):
         """Test that fetch_player_boxscores_by_game calls write_csv."""
-        mock_boxscore = mocker.MagicMock()
-        mock_boxscore.get_data_frames.return_value = [mock_player_boxscore_response]
-        mocker.patch(
-            'lib.fetch_player_boxscores_by_game.boxscoretraditionalv3.BoxScoreTraditionalV3',
-            return_value=mock_boxscore
-        )
-        mock_write_csv = mocker.patch(
-            'lib.fetch_player_boxscores_by_game.write_csv',
-            return_value=True
-        )
-        mocker.patch('builtins.print')
-
         from lib.fetch_player_boxscores_by_game import fetch_player_boxscores_by_game
 
         output_path = str(tmp_path / "boxscores.csv")
         fetch_player_boxscores_by_game(game_id="0022400123", output_path=output_path)
 
-        mock_write_csv.assert_called_once()
-        call_args = mock_write_csv.call_args
+        mock_boxscore_dependencies['write_csv'].assert_called_once()
+        call_args = mock_boxscore_dependencies['write_csv'].call_args
         assert call_args[0][1] == output_path
 
     def test_fetch_player_boxscores_by_game_empty_no_write(self, mocker, tmp_path):
@@ -538,27 +442,15 @@ class TestFetchPlayerBoxscoresByGame:
         mock_write_csv.assert_not_called()
 
     def test_fetch_player_boxscores_by_game_default_output_path(
-        self, mocker, mock_player_boxscore_response
+        self, mock_boxscore_dependencies
     ):
         """Test fetch_player_boxscores_by_game uses default output path."""
-        mock_boxscore = mocker.MagicMock()
-        mock_boxscore.get_data_frames.return_value = [mock_player_boxscore_response]
-        mocker.patch(
-            'lib.fetch_player_boxscores_by_game.boxscoretraditionalv3.BoxScoreTraditionalV3',
-            return_value=mock_boxscore
-        )
-        mock_write_csv = mocker.patch(
-            'lib.fetch_player_boxscores_by_game.write_csv',
-            return_value=True
-        )
-        mocker.patch('builtins.print')
-
         from lib.fetch_player_boxscores_by_game import fetch_player_boxscores_by_game
 
         fetch_player_boxscores_by_game(game_id="0022400123")
 
-        mock_write_csv.assert_called_once()
-        call_args = mock_write_csv.call_args
+        mock_boxscore_dependencies['write_csv'].assert_called_once()
+        call_args = mock_boxscore_dependencies['write_csv'].call_args
         assert call_args[0][1] == "data/player_boxscores.csv"
 
     def test_get_player_boxscores_normalizes_columns(
@@ -610,20 +502,9 @@ class TestFetchTeamBoxScores:
     """Integration tests for fetch_team_box_scores module."""
 
     def test_fetch_team_games_returns_dataframe(
-        self, mocker, mock_lakers_team, mock_game_finder_response
+        self, mock_team_games_dependencies
     ):
         """Test that fetch_team_games returns a DataFrame with game data."""
-        mocker.patch(
-            'lib.fetch_team_box_scores.normalize_team_id',
-            return_value=1610612747
-        )
-        mock_finder = mocker.MagicMock()
-        mock_finder.get_data_frames.return_value = [mock_game_finder_response]
-        mocker.patch(
-            'lib.fetch_team_box_scores.leaguegamefinder.LeagueGameFinder',
-            return_value=mock_finder
-        )
-
         from lib.fetch_team_box_scores import fetch_team_games
 
         result = fetch_team_games(team_id="LAL", date_from="2024-01-01", date_to="2024-01-31")
@@ -687,20 +568,9 @@ class TestFetchTeamBoxScores:
         assert len(result) == 0
 
     def test_fetch_team_games_with_season(
-        self, mocker, mock_game_finder_response
+        self, mock_team_games_dependencies
     ):
         """Test fetch_team_games with season filter."""
-        mocker.patch(
-            'lib.fetch_team_box_scores.normalize_team_id',
-            return_value=1610612747
-        )
-        mock_finder = mocker.MagicMock()
-        mock_finder.get_data_frames.return_value = [mock_game_finder_response]
-        mock_game_finder = mocker.patch(
-            'lib.fetch_team_box_scores.leaguegamefinder.LeagueGameFinder',
-            return_value=mock_finder
-        )
-
         from lib.fetch_team_box_scores import fetch_team_games
 
         result = fetch_team_games(team_id="LAL", season="2023-24")
@@ -709,24 +579,13 @@ class TestFetchTeamBoxScores:
         assert len(result) == 3
 
         # Verify season was passed to LeagueGameFinder
-        call_kwargs = mock_game_finder.call_args.kwargs
+        call_kwargs = mock_team_games_dependencies['game_finder'].call_args.kwargs
         assert call_kwargs.get('season_nullable') == "2023-24"
 
     def test_fetch_team_games_contains_expected_columns(
-        self, mocker, mock_game_finder_response
+        self, mock_team_games_dependencies
     ):
         """Test that returned DataFrame contains expected game columns."""
-        mocker.patch(
-            'lib.fetch_team_box_scores.normalize_team_id',
-            return_value=1610612747
-        )
-        mock_finder = mocker.MagicMock()
-        mock_finder.get_data_frames.return_value = [mock_game_finder_response]
-        mocker.patch(
-            'lib.fetch_team_box_scores.leaguegamefinder.LeagueGameFinder',
-            return_value=mock_finder
-        )
-
         from lib.fetch_team_box_scores import fetch_team_games
 
         result = fetch_team_games(team_id="LAL", date_from="2024-01-01", date_to="2024-01-31")
@@ -736,25 +595,14 @@ class TestFetchTeamBoxScores:
             assert col in result.columns
 
     def test_fetch_team_games_date_formatting(
-        self, mocker, mock_game_finder_response
+        self, mock_team_games_dependencies
     ):
         """Test that dates are properly formatted for the API."""
-        mocker.patch(
-            'lib.fetch_team_box_scores.normalize_team_id',
-            return_value=1610612747
-        )
-        mock_finder = mocker.MagicMock()
-        mock_finder.get_data_frames.return_value = [mock_game_finder_response]
-        mock_game_finder = mocker.patch(
-            'lib.fetch_team_box_scores.leaguegamefinder.LeagueGameFinder',
-            return_value=mock_finder
-        )
-
         from lib.fetch_team_box_scores import fetch_team_games
 
         fetch_team_games(team_id="LAL", date_from="2024-01-15", date_to="2024-01-31")
 
-        call_kwargs = mock_game_finder.call_args.kwargs
+        call_kwargs = mock_team_games_dependencies['game_finder'].call_args.kwargs
         # Dates should be formatted to MM/DD/YYYY for the NBA API
         assert call_kwargs.get('date_from_nullable') == "01/15/2024"
         assert call_kwargs.get('date_to_nullable') == "01/31/2024"
