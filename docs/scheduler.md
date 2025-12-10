@@ -46,12 +46,12 @@ Based on the [Data Model](data_model.md), here are the entities and their refres
 
 | Entity | CLI Command | Cardinality | Volatility | Refresh Frequency |
 |--------|-------------|-------------|------------|-------------------|
-| **Players** | `python fetch.py players` | ~5,000 total | Low (new rookies each season) | Weekly during season, daily during draft/free agency |
-| **Teams** | `python fetch.py teams` | 30 | Very low (franchise changes rare) | Monthly or on-demand |
-| **Player Game Logs** | `python fetch.py player-games --player-id <ID> --season <SEASON>` | ~82 per player per season | High during season | Daily during season |
-| **Player Career Stats** | `python fetch.py player-stats --player-id <ID>` | ~15-20 seasons per player | Medium | Weekly during season |
-| **Player Box Scores** | `python fetch.py player-boxscores --game-id <GAME_ID>` | ~24 players per game | High (new games daily) | After each game |
-| **Team Game Box Scores** | `python fetch.py team-game-boxscores --team-id <ID> --date-from <DATE> --date-to <DATE>` | ~82 per team per season | High during season | Daily during season |
+| **Players** | `python main.py players` | ~5,000 total | Low (new rookies each season) | Weekly during season, daily during draft/free agency |
+| **Teams** | `python main.py teams` | 30 | Very low (franchise changes rare) | Monthly or on-demand |
+| **Player Game Logs** | `python main.py player-games --player-id <ID> --season <SEASON>` | ~82 per player per season | High during season | Daily during season |
+| **Player Career Stats** | `python main.py player-stats --player-id <ID>` | ~15-20 seasons per player | Medium | Weekly during season |
+| **Player Box Scores** | `python main.py player-boxscores --game-id <GAME_ID>` | ~24 players per game | High (new games daily) | After each game |
+| **Team Game Box Scores** | `python main.py team-game-boxscores --team-id <ID> --date-from <DATE> --date-to <DATE>` | ~82 per team per season | High during season | Daily during season |
 
 ### Data Volume Estimates
 
@@ -103,7 +103,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r requirements.txt
-      - run: python fetch.py players --output data/players.csv
+      - run: python main.py players --output data/players.csv
       - uses: actions/upload-artifact@v4
         with:
           name: players-data
@@ -125,7 +125,7 @@ jobs:
           python-version: '3.11'
       - run: pip install -r requirements.txt
       - run: |
-          python fetch.py team-game-boxscores \
+          python main.py team-game-boxscores \
             --team-id ${{ matrix.team }} \
             --date-from $(date -d "yesterday" +%Y-%m-%d) \
             --date-to $(date +%Y-%m-%d)
@@ -209,12 +209,12 @@ with DAG(
 
     fetch_players = BashOperator(
         task_id='fetch_players',
-        bash_command='cd /opt/nba_data && python fetch.py players',
+        bash_command='cd /opt/nba_data && python main.py players',
     )
 
     fetch_teams = BashOperator(
         task_id='fetch_teams',
-        bash_command='cd /opt/nba_data && python fetch.py teams',
+        bash_command='cd /opt/nba_data && python main.py teams',
     )
 
     # Dynamic task generation for teams
@@ -222,7 +222,7 @@ with DAG(
     for team in ['LAL', 'GSW', 'BOS']:  # Abbreviated for example
         task = BashOperator(
             task_id=f'fetch_team_games_{team}',
-            bash_command=f'cd /opt/nba_data && python fetch.py team-game-boxscores --team-id {team} --date {{{{ ds }}}}',
+            bash_command=f'cd /opt/nba_data && python main.py team-game-boxscores --team-id {team} --date {{{{ ds }}}}',
             pool='nba_api_pool',  # Limit concurrent API calls
         )
         team_tasks.append(task)
@@ -396,7 +396,7 @@ def retry_with_backoff(max_retries=3, base_delay=5):
 **Implementation**:
 ```bash
 # Weekly player refresh
-python fetch.py players --output data/players.csv
+python main.py players --output data/players.csv
 
 # Compare with previous to detect changes
 diff data/players.csv data/players_prev.csv

@@ -92,7 +92,7 @@ The NBA Data CLI fetches data from the NBA Stats API and outputs CSV files. This
 
 ### Players
 
-**CLI Command:** `python fetch.py players --output data/players.csv`
+**CLI Command:** `python main.py players --output data/players.csv`
 
 **Description:** Contains all NBA players (historical and current) with basic identifying information.
 
@@ -133,7 +133,7 @@ CREATE INDEX idx_players_is_active ON players(is_active);
 
 ### Teams
 
-**CLI Command:** `python fetch.py teams --output data/teams.csv`
+**CLI Command:** `python main.py teams --output data/teams.csv`
 
 **Description:** Contains all 30 current NBA franchises with location and founding information.
 
@@ -178,7 +178,7 @@ CREATE INDEX idx_teams_city ON teams(city);
 
 ### Player Game Logs
 
-**CLI Command:** `python fetch.py player-games --player-id <ID> --season <SEASON>`
+**CLI Command:** `python main.py player-games --player-id <ID> --season <SEASON>`
 
 **Description:** Contains per-game statistics for a specific player during a given season. Each row represents one game played by the player.
 
@@ -258,7 +258,7 @@ CREATE INDEX idx_player_game_logs_player ON player_game_logs(Player_ID);
 
 ### Player Career Stats
 
-**CLI Command:** `python fetch.py player-stats --player-id <ID>`
+**CLI Command:** `python main.py player-stats --player-id <ID>`
 
 **Description:** Contains season-by-season career statistics for a specific player. The primary result set is `SeasonTotalsRegularSeason`, which provides regular season statistics broken down by season and team.
 
@@ -339,7 +339,7 @@ CREATE INDEX idx_player_career_stats_team ON player_career_stats(TEAM_ID);
 
 ### Player Box Scores
 
-**CLI Command:** `python fetch.py player-boxscores --game-id <GAME_ID>`
+**CLI Command:** `python main.py player-boxscores --game-id <GAME_ID>`
 
 **Description:** Contains individual player box score statistics for a specific game. Each row represents one player's performance in a game, with players from both teams included.
 
@@ -419,7 +419,7 @@ CREATE INDEX idx_player_box_scores_team ON player_box_scores(TEAM_ID);
 
 ### Team Game Box Scores
 
-**CLI Command:** `python fetch.py team-game-boxscores --team-id <ID> --date-from <DATE> --date-to <DATE>`
+**CLI Command:** `python main.py team-game-boxscores --team-id <ID> --date-from <DATE> --date-to <DATE>`
 
 **Description:** Contains team-level game statistics retrieved via LeagueGameFinder. Each row represents one team's performance in a game within the specified date range or season. This provides team box scores for games filtered by date range and/or season.
 
@@ -543,7 +543,7 @@ CREATE INDEX idx_team_game_box_scores_game ON team_game_box_scores(GAME_ID);
 
 ```bash
 # Generate CSV
-python fetch.py players --output data/players.csv
+python main.py players --output data/players.csv
 
 # Load into SQLite
 sqlite3 nba.db <<EOF
@@ -585,7 +585,7 @@ ORDER BY PPG DESC;
 
 ```bash
 # Fetch player box scores for a specific game
-python fetch.py player-boxscores --game-id 0022400123 --output data/player_boxscores.csv
+python main.py player-boxscores --game-id 0022400123 --output data/player_boxscores.csv
 ```
 
 ```sql
@@ -600,7 +600,7 @@ ORDER BY PTS DESC;
 
 ```bash
 # Fetch Lakers games in January 2024
-python fetch.py team-game-boxscores --team-id LAL --date-from 2024-01-01 --date-to 2024-01-31 --output data/lakers_jan_2024.csv
+python main.py team-game-boxscores --team-id LAL --date-from 2024-01-01 --date-to 2024-01-31 --output data/lakers_jan_2024.csv
 ```
 
 ```sql

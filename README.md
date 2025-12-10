@@ -67,10 +67,8 @@ The NBA Data CLI provides a unified command-line interface with subcommands for 
 ### Basic Command Structure
 
 ```zsh
-python fetch.py <subcommand> [options]
+python main.py <subcommand> [options]
 ```
-
-> **Note:** The CLI will soon be accessible via `python main.py <subcommand>` as part of the ongoing restructure.
 
 ### Available Subcommands
 
@@ -85,38 +83,43 @@ python fetch.py <subcommand> [options]
 
 **Get help:**
 ```zsh
-python fetch.py --help                    # See all subcommands
-python fetch.py players --help            # Help for a specific subcommand
+python main.py --help                    # See all subcommands
+python main.py players --help            # Help for a specific subcommand
 ```
 
 **Fetch all players:**
 ```zsh
-python fetch.py players --output data/players.csv
+python main.py players --output data/players.csv
 ```
 
 **Fetch all teams:**
 ```zsh
-python fetch.py teams --output data/teams.csv
+python main.py teams --output data/teams.csv
 ```
 
 **Fetch player game logs:**
 ```zsh
-python fetch.py player-games --player-id 2544 --season 2022-23
+python main.py player-games --player-id 2544 --season 2022-23
 ```
 
 **Fetch team game logs:**
 ```zsh
-python fetch.py team-games --team-id LAL --season 2022-23
+python main.py team-game-boxscores --team-id LAL --date-from 2024-01-01 --date-to 2024-01-31
 ```
 
 **Fetch player career stats:**
 ```zsh
-python fetch.py player-stats --player-id 2544
+python main.py player-stats --player-id 2544
+```
+
+**Fetch player box scores:**
+```zsh
+python main.py player-boxscores --game-id 0022400123
 ```
 
 **Read saved stats:**
 ```zsh
-python fetch.py read-stats players.csv
+python main.py read-stats players.csv
 ```
 ## Tasks
 
@@ -128,8 +131,9 @@ The project uses a modular architecture with domain-focused submodules in the `l
 
 ```
 nba_data/
-├── fetch.py                            # CLI entrypoint (will be replaced by main.py)
+├── main.py                             # CLI entrypoint
 ├── lib/
+│   ├── cli.py                         # CLI implementation
 │   ├── __init__.py                    # Re-exports for backward compatibility
 │   ├── read_stats.py                  # Utility for reading CSV data
 │   ├── player/                        # Player-related functionality
