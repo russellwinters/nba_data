@@ -134,15 +134,15 @@ nba_data/
 ├── main.py                             # CLI entrypoint
 ├── lib/
 │   ├── cli.py                         # CLI implementation
-│   ├── __init__.py                    # Re-exports for backward compatibility
+│   ├── __init__.py                    # Package exports
 │   ├── read_stats.py                  # Utility for reading CSV data
 │   ├── player/                        # Player-related functionality
-│   │   ├── all.py                     # Fetch all players (fetch_players)
-│   │   ├── games_by_season.py         # Fetch player games (fetch_player_games)
-│   │   └── career_stats.py            # Fetch player stats (fetch_player_stats)
+│   │   ├── all.py                     # Fetch all players
+│   │   ├── games_by_season.py         # Fetch player games
+│   │   └── career_stats.py            # Fetch player stats
 │   ├── team/                          # Team-related functionality
-│   │   ├── all.py                     # Fetch all teams (fetch_teams)
-│   │   └── games.py                   # Fetch team games (fetch_team_games)
+│   │   ├── all.py                     # Fetch all teams
+│   │   └── games.py                   # Fetch team games
 │   ├── game/                          # Game-related functionality
 │   │   ├── boxscore.py                # Fetch player box scores
 │   │   └── boxscores.py               # Box score utilities and game finding
@@ -154,8 +154,8 @@ nba_data/
 ```
 
 **Import Paths:**
-- New style: `from lib.player import all, games_by_season, career_stats`
-- Backward compatible: `from lib import fetch_players, fetch_player_games, fetch_player_stats`
+- Direct from submodules: `from lib.player import all, games_by_season, career_stats`
+- Via lib package: `from lib import player_all, games_by_season, career_stats, team_all, team_games, boxscore`
 
 More detailed feature descriptions can be found on the [Features Doc](./docs/features.md)
 

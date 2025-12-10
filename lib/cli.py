@@ -27,10 +27,10 @@ Examples:
 import argparse
 import sys
 
-# Import from submodules
-from lib.player import fetch_players, fetch_player_games, fetch_player_stats
-from lib.team import fetch_team_games
-from lib.game import fetch_player_boxscores_by_game
+# Import from submodules using new names
+from lib.player import all as player_all, games_by_season, career_stats
+from lib.team import all as team_all, games as team_games
+from lib.game import boxscore
 from lib.read_stats import read_stats
 from lib.helpers.csv_helpers import write_csv
 
@@ -182,14 +182,13 @@ def main():
     
     try:
         if args.command == 'players':
-            fetch_players(output_path=args.output)
+            player_all(output_path=args.output)
         
         elif args.command == 'teams':
-            from lib.team import fetch_teams
-            fetch_teams(output_path=args.output)
+            team_all(output_path=args.output)
         
         elif args.command == 'player-games':
-            fetch_player_games(
+            games_by_season(
                 player_id=args.player_id,
                 season=args.season,
                 output_path=args.output
@@ -200,7 +199,7 @@ def main():
             date_from = getattr(args, 'date_from', None) or getattr(args, 'date', None)
             date_to = getattr(args, 'date_to', None) or getattr(args, 'date', None)
 
-            df = fetch_team_games(
+            df = team_games(
                 team_id=args.team_id,
                 date_from=date_from,
                 date_to=date_to,
@@ -219,13 +218,13 @@ def main():
                 write_csv(df, args.output)
         
         elif args.command == 'player-stats':
-            fetch_player_stats(
+            career_stats(
                 player_id=args.player_id,
                 output_path=args.output
             )
         
         elif args.command == 'player-boxscores':
-            fetch_player_boxscores_by_game(
+            boxscore(
                 game_id=args.game_id,
                 output_path=args.output
             )
