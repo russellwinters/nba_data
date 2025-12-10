@@ -6,7 +6,7 @@ and box scores.
 """
 
 from .fetch_teams import fetch_teams
-from .fetch_team_box_scores import fetch_team_games, write_csv
+from .fetch_team_box_scores import fetch_team_games
 
 # Re-export the module for backward compatibility
 from . import fetch_team_box_scores
@@ -14,6 +14,5 @@ from . import fetch_team_box_scores
 __all__ = [
     'fetch_teams',
     'fetch_team_games',
-    'write_csv',
     'fetch_team_box_scores',
 ]
