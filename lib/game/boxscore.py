@@ -6,15 +6,15 @@ teams given a `game_id`, and write the player-level data to a CSV file.
 
 Usage:
     # Get player box scores for a specific game
-    python lib/fetch_player_boxscores_by_game.py --game-id 0022400123
+    python lib/game/boxscore.py --game-id 0022400123
 
     # Specify custom output file
-    python lib/fetch_player_boxscores_by_game.py --game-id 0022400123 --output my_output.csv
+    python lib/game/boxscore.py --game-id 0022400123 --output my_output.csv
 
 Example:
-    from lib.fetch_player_boxscores_by_game import get_player_boxscores
+    from lib.game.boxscore import boxscore
 
-    df = get_player_boxscores('0022400123')
+    df = boxscore('0022400123')
 """
 
 import argparse

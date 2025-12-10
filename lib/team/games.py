@@ -5,14 +5,14 @@ This module provides a wrapper around the NBA API endpoint to find games for a
 team within a date range and returns a `pandas.DataFrame` for downstream processing.
 
 Example:
-    from lib.fetch_team_box_scores import fetch_team_games
+    from lib.team.games import games
 
-    df = fetch_team_games('LAL', date_from='2024-07-01', date_to='2025-07-01')
+    df = games('LAL', date_from='2024-07-01', date_to='2025-07-01')
 
 CLI Usage:
-    python lib/fetch_team_box_scores.py --team-id LAL --date-from 2024-07-01 --date-to 2025-07-01
-    python lib/fetch_team_box_scores.py --team-id LAL --date 2024-01-15
-    python lib/fetch_team_box_scores.py --team-id LAL --season 2023-24
+    python lib/team/games.py --team-id LAL --date-from 2024-07-01 --date-to 2025-07-01
+    python lib/team/games.py --team-id LAL --date 2024-01-15
+    python lib/team/games.py --team-id LAL --season 2023-24
 """
 import argparse
 from typing import Any, Optional
@@ -60,7 +60,7 @@ def games(
         ValidationError: If team_id, dates, or season are invalid
 
     Example:
-        >>> df = fetch_team_games('LAL', '2024-01-01', '2024-01-31')
+        >>> df = games('LAL', '2024-01-01', '2024-01-31')
         >>> print(df[['GAME_ID', 'GAME_DATE', 'MATCHUP', 'WL', 'PTS']])
     """
     # Validate inputs
@@ -108,16 +108,16 @@ def main():
         epilog="""
 Examples:
     # Find games for a team in a date range
-    python lib/fetch_team_box_scores.py --team-id LAL --date-from 2024-01-01 --date-to 2024-01-31
+    python lib/team/games.py --team-id LAL --date-from 2024-01-01 --date-to 2024-01-31
 
     # Find games for a team on a specific date
-    python lib/fetch_team_box_scores.py --team-id LAL --date 2024-01-15
+    python lib/team/games.py --team-id LAL --date 2024-01-15
 
     # Find games for a team in a season
-    python lib/fetch_team_box_scores.py --team-id LAL --season 2023-24
+    python lib/team/games.py --team-id LAL --season 2023-24
 
     # Specify custom output file
-    python lib/fetch_team_box_scores.py --team-id LAL --date 2024-01-15 --output my_output.csv
+    python lib/team/games.py --team-id LAL --date 2024-01-15 --output my_output.csv
         """,
     )
 
