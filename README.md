@@ -62,13 +62,15 @@ deactivate                  # exit the venv when finished
 
 ## Usage
 
-The NBA Data CLI provides a unified `fetch.py` command with subcommands for all data fetching and reading operations.
+The NBA Data CLI provides a unified command-line interface with subcommands for all data fetching and reading operations.
 
 ### Basic Command Structure
 
 ```zsh
 python fetch.py <subcommand> [options]
 ```
+
+> **Note:** The CLI will soon be accessible via `python main.py <subcommand>` as part of the ongoing restructure.
 
 ### Available Subcommands
 
@@ -122,15 +124,34 @@ Check docs and plans directories for stuff on the go. This should be organized b
 
 ## Project Structure
 
-The project uses a modular architecture with all core functionality in the `lib/` directory:
+The project uses a modular architecture with domain-focused submodules in the `lib/` directory:
 
-- **`fetch.py`** — Unified CLI entrypoint exposing all fetching and reading operations via subcommands
-- **`lib/fetch_players.py`** — Player roster data fetching
-- **`lib/fetch_teams.py`** — Team information retrieval
-- **`lib/fetch_player_stats.py`** — Player career statistics
-- **`lib/fetch_player_games.py`** — Player game-level logs
-- **`lib/fetch_team_games.py`** — Team game-level logs
-- **`lib/read_stats.py`** — CSV data reading and display utility
+```
+nba_data/
+├── fetch.py                            # CLI entrypoint (will be replaced by main.py)
+├── lib/
+│   ├── __init__.py                    # Re-exports for backward compatibility
+│   ├── read_stats.py                  # Utility for reading CSV data
+│   ├── player/                        # Player-related functionality
+│   │   ├── all.py                     # Fetch all players (fetch_players)
+│   │   ├── games_by_season.py         # Fetch player games (fetch_player_games)
+│   │   └── career_stats.py            # Fetch player stats (fetch_player_stats)
+│   ├── team/                          # Team-related functionality
+│   │   ├── all.py                     # Fetch all teams (fetch_teams)
+│   │   └── games.py                   # Fetch team games (fetch_team_games)
+│   ├── game/                          # Game-related functionality
+│   │   ├── boxscore.py                # Fetch player box scores
+│   │   └── boxscores.py               # Box score utilities and game finding
+│   └── helpers/                       # Shared utility functions
+│       ├── team_helpers.py
+│       ├── date_helpers.py
+│       ├── csv_helpers.py
+│       └── ...
+```
+
+**Import Paths:**
+- New style: `from lib.player import all, games_by_season, career_stats`
+- Backward compatible: `from lib import fetch_players, fetch_player_games, fetch_player_stats`
 
 More detailed feature descriptions can be found on the [Features Doc](./docs/features.md)
 
