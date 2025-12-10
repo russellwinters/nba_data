@@ -25,7 +25,7 @@ def _fetch_player_game_log(player_id: int, season: str) -> pd.DataFrame:
     return regular_season_game_log.get_data_frames()[0]
 
 
-def fetch_player_games(player_id: int, season: str, output_path=None):
+def games_by_season(player_id: int, season: str, output_path=None):
     """
     Fetch a player's game log for a specific season.
     
@@ -67,6 +67,10 @@ def fetch_player_games(player_id: int, season: str, output_path=None):
         return None
 
 
+# Backward compatibility alias
+fetch_player_games = games_by_season
+
+
 def main():
     parser = argparse.ArgumentParser(description='Fetch a player\'s game log for a specific season')
     parser.add_argument(
@@ -85,7 +89,7 @@ def main():
         help='Output CSV file path (default: data/{player_id}_games_{season}.csv)'
     )
     args = parser.parse_args()
-    fetch_player_games(player_id=args.player_id, season=args.season, output_path=args.output)
+    games_by_season(player_id=args.player_id, season=args.season, output_path=args.output)
 
 
 if __name__ == '__main__':

@@ -33,7 +33,7 @@ DEFAULT_OUTPUT_PATH = "data/demo_boxscores.csv"
 
 
 @api_endpoint(timeout=30)
-def fetch_team_games(
+def games(
     team_id: Any,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
@@ -96,6 +96,10 @@ def fetch_team_games(
     return pd.DataFrame()
 
 
+# Backward compatibility alias
+fetch_team_games = games
+
+
 def main():
     """Main entry point for the CLI."""
     parser = argparse.ArgumentParser(
@@ -154,7 +158,7 @@ Examples:
     date_to = args.date_to or args.date
 
     # Fetch game data
-    df = fetch_team_games(
+    df = games(
         team_id=args.team_id,
         date_from=date_from,
         date_to=date_to,

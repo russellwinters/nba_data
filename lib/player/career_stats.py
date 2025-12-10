@@ -22,7 +22,7 @@ def _fetch_career_stats(player_id: int) -> pd.DataFrame:
     return career.get_data_frames()[0]
 
 
-def fetch_player_stats(player_id: int, output_path=None):
+def career_stats(player_id: int, output_path=None):
     """
     Fetch a player's career statistics.
     
@@ -45,21 +45,25 @@ def fetch_player_stats(player_id: int, output_path=None):
         player_id = player['id']
 
         # Fetch the career stats using the decorated function
-        career_stats = _fetch_career_stats(player_id)
+        career_stats_data = _fetch_career_stats(player_id)
         
-        if career_stats.empty:
+        if career_stats_data.empty:
             print("Error fetching career stats")
             return None
         
         # Write the career stats to a CSV file
         if output_path is None:
             output_path = f'data/{player_id}_career.csv'
-        write_csv(career_stats, output_path)
-        print(career_stats)
-        return career_stats
+        write_csv(career_stats_data, output_path)
+        print(career_stats_data)
+        return career_stats_data
     else:
         print("Player not found")
         return None
+
+
+# Backward compatibility alias
+fetch_player_stats = career_stats
 
 
 def main():
@@ -75,7 +79,7 @@ def main():
         help='Output CSV file path (default: data/{player_id}_career.csv)'
     )
     args = parser.parse_args()
-    fetch_player_stats(player_id=args.player_id, output_path=args.output)
+    career_stats(player_id=args.player_id, output_path=args.output)
 
 
 if __name__ == '__main__':

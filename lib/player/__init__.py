@@ -2,18 +2,20 @@
 Player submodule - Functions for fetching player-related NBA data.
 
 This module provides functions for fetching player information, game logs,
-statistics, and box scores.
+and statistics.
 """
 
-from .fetch_players import fetch_players
-from .fetch_player_games import fetch_player_games
-from .fetch_player_stats import fetch_player_stats
-from .fetch_player_boxscores import fetch_player_boxscores_by_game, get_player_boxscores
+from .all import all, fetch_players
+from .games_by_season import games_by_season, fetch_player_games
+from .career_stats import career_stats, fetch_player_stats
 
 __all__ = [
+    # New names
+    'all',
+    'games_by_season',
+    'career_stats',
+    # Backward compatibility
     'fetch_players',
     'fetch_player_games',
     'fetch_player_stats',
-    'fetch_player_boxscores_by_game',
-    'get_player_boxscores',
 ]

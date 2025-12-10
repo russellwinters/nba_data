@@ -204,7 +204,7 @@ def get_player_boxscores(
     return pd.DataFrame()
 
 
-def fetch_player_boxscores_by_game(
+def boxscore(
     game_id: str,
     output_path: Optional[str] = None,
     timeout: int = 30,
@@ -220,7 +220,7 @@ def fetch_player_boxscores_by_game(
         DataFrame containing player box scores
 
     Example:
-        >>> df = fetch_player_boxscores_by_game('0022400123')
+        >>> df = boxscore('0022400123')
         >>> # Writes to data/player_boxscores.csv by default
     """
     if output_path is None:
@@ -243,6 +243,10 @@ def fetch_player_boxscores_by_game(
     return df
 
 
+# Backward compatibility alias
+fetch_player_boxscores_by_game = boxscore
+
+
 def main():
     """Main entry point for the CLI."""
     parser = argparse.ArgumentParser(
@@ -251,10 +255,10 @@ def main():
         epilog="""
 Examples:
     # Get player box scores for a specific game
-    python lib/fetch_player_boxscores_by_game.py --game-id 0022400123
+    python lib/game/boxscore.py --game-id 0022400123
 
     # Specify custom output file
-    python lib/fetch_player_boxscores_by_game.py --game-id 0022400123 --output my_output.csv
+    python lib/game/boxscore.py --game-id 0022400123 --output my_output.csv
         """,
     )
 
@@ -272,7 +276,7 @@ Examples:
 
     args = parser.parse_args()
 
-    fetch_player_boxscores_by_game(
+    boxscore(
         game_id=args.game_id,
         output_path=args.output,
     )

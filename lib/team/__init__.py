@@ -1,18 +1,17 @@
 """
 Team submodule - Functions for fetching team-related NBA data.
 
-This module provides functions for fetching team information, game logs,
-and box scores.
+This module provides functions for fetching team information and game logs.
 """
 
-from .fetch_teams import fetch_teams
-from .fetch_team_box_scores import fetch_team_games
-
-# Re-export the module for backward compatibility
-from . import fetch_team_box_scores
+from .all import all, fetch_teams
+from .games import games, fetch_team_games
 
 __all__ = [
+    # New names
+    'all',
+    'games',
+    # Backward compatibility
     'fetch_teams',
     'fetch_team_games',
-    'fetch_team_box_scores',
 ]
