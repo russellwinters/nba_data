@@ -27,13 +27,13 @@ Examples:
 import argparse
 import sys
 
-from lib.player.all import fetch_players
-from lib.team.all import fetch_teams
-from lib.player.games_by_season import fetch_player_games
-from lib.player.career_stats import fetch_player_stats
-from lib.game.boxscore import fetch_player_boxscores_by_game
+from lib.fetch_players import fetch_players
+from lib.fetch_teams import fetch_teams
+from lib.fetch_player_games import fetch_player_games
+from lib.fetch_player_stats import fetch_player_stats
+from lib.fetch_player_boxscores_by_game import fetch_player_boxscores_by_game
 from lib.read_stats import read_stats
-from lib.team import games as team_games_module
+from lib import fetch_team_box_scores
 
 
 def create_parser():
@@ -200,10 +200,7 @@ def main():
             date_from = getattr(args, 'date_from', None) or getattr(args, 'date', None)
             date_to = getattr(args, 'date_to', None) or getattr(args, 'date', None)
 
-            # Import write_csv from helpers
-            from lib.helpers.csv_helpers import write_csv
-            
-            df = team_games_module.fetch_team_games(
+            df = fetch_team_box_scores.fetch_team_games(
                 team_id=args.team_id,
                 date_from=date_from,
                 date_to=date_to,
@@ -219,7 +216,7 @@ def main():
                 print(df[available_cols].to_string(index=False))
 
                 # Write to CSV
-                write_csv(df, args.output)
+                fetch_team_box_scores.write_csv(df, args.output)
         
         elif args.command == 'player-stats':
             fetch_player_stats(
