@@ -189,7 +189,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-ENTRYPOINT ["python", "fetch.py"]
+ENTRYPOINT ["python", "main.py"]
 ```
 
 #### Task Definition
@@ -420,19 +420,19 @@ TEAMS="ATL BOS BKN CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN N
 
 case $DATA_TYPE in
   "players")
-    python fetch.py players --output data/players.csv
+    python main.py players --output data/players.csv
     aws s3 cp data/players.csv s3://$S3_BUCKET/players/$DATE/players.csv
     ;;
   "team-games")
     YESTERDAY=$(date -d "yesterday" +%Y-%m-%d)
     for TEAM in $TEAMS; do
-      python fetch.py team-game-boxscores --team-id $TEAM --date $YESTERDAY --output data/${TEAM}_games.csv
+      python main.py team-game-boxscores --team-id $TEAM --date $YESTERDAY --output data/${TEAM}_games.csv
       aws s3 cp data/${TEAM}_games.csv s3://$S3_BUCKET/team-games/$YESTERDAY/${TEAM}.csv
       sleep 3  # Rate limiting
     done
     ;;
   "player-stats")
-    python fetch.py players --output data/players.csv
+    python main.py players --output data/players.csv
     # Additional logic to fetch active player stats
     ;;
 esac
