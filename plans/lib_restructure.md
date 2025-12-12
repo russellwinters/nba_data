@@ -44,23 +44,32 @@ nba_data/
 │   ├── read_stats.py                  # Utility (stays at lib level)
 │   ├── player/
 │   │   ├── __init__.py               # Exports: fetch_players, fetch_player_games, etc.
-│   │   ├── fetch_players.py          # Moved from lib/fetch_players.py
-│   │   ├── fetch_player_games.py     # Moved from lib/fetch_player_games.py
-│   │   ├── fetch_player_stats.py     # Moved from lib/fetch_player_stats.py
-│   │   └── fetch_player_boxscores.py # Moved from lib/fetch_player_boxscores_by_game.py
+│   │   ├── all.py          # Moved from lib/fetch_players.py
+│   │   ├── games_by_season.py     # Moved from lib/fetch_player_games.py
+│   │   ├── career_stats.py     # Moved from lib/fetch_player_stats.py
 │   ├── team/
 │   │   ├── __init__.py               # Exports: fetch_teams, fetch_team_games, etc.
-│   │   ├── fetch_teams.py            # Moved from lib/fetch_teams.py
-│   │   ├── fetch_team_games.py       # Moved from lib/fetch_team_games.py
-│   │   ├── fetch_team_game_logs.py   # Moved from lib/fetch_team_game_logs.py
-│   │   └── fetch_team_box_scores.py  # Moved from lib/fetch_team_box_scores.py
+│   │   ├── all.py            # Moved from lib/fetch_teams.py
+│   │   ├── games.py       # Moved from lib/fetch_team_games.py
 │   ├── game/
 │   │   ├── __init__.py               # Exports: boxscores functions
-│   │   └── boxscores.py              # Moved from lib/demo_boxscores.py (renamed)
+│   │   └── boxscores.py              # Moved from lib/fetch_team_box_scores.py (renamed)
 │   └── helpers/
 │       ├── __init__.py               # Unchanged
 │       └── team_helpers.py           # Unchanged
 ```
+
+## Actual Repository State (brief)
+
+The implementation in the repository largely follows the proposed restructure (domain submodules and a `lib/cli.py`), but there are a few notable differences from this plan that are important to call out:
+
+- **`lib/__init__.py` exports submodules only**: The package currently imports and exposes the `player`, `team`, and `game` subpackages and the `read_stats` utility. It does *not* perform function-level re-exports (for example, `from lib import fetch_players` will not work). See `lib/__init__.py`.
+- **Player boxscore functionality lives in `lib/game`**: Player boxscore functions (the CLI-facing `boxscore` function and `fetch_player_boxscores_by_game` alias) are implemented in `lib/game/boxscore.py` and re-exported from `lib/game/__init__.py`. They are not inside `lib/player/`.
+- **Team game lookup implemented as `lib/team/games.py`**: The team game/boxscore finder is `lib/team/games.py` and exposes `games` (aliased as `fetch_team_games`). There is no separate `fetch_team_box_scores.py` module.
+- **`main.py` exists and `fetch.py` is not present**: The root `main.py` delegates to `lib.cli.main()` as planned; `fetch.py` has already been removed from the repository.
+
+These differences are deliberate or already committed; the plan file below is updated with these facts in mind (see "Module Categorization" notes and the Acceptance Criteria section).
+
 
 ## Module Categorization
 
