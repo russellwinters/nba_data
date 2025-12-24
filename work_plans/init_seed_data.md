@@ -6,6 +6,9 @@ Create a script that generates seed data CSV files containing:
 1. All NBA players (historical and active)
 2. All NBA teams
 3. Games and boxscore data from the previous month
+4. Player boxscores (player stats per game)
+5. Team boxscores (team stats per game)
+6. Player career stats for all players
 
 These CSV files will be used in a separate application to load/parse data into a relational database.
 
@@ -36,13 +39,20 @@ The project already has robust data fetching capabilities:
 - Returns DataFrame with columns: `id`, `full_name`, `abbreviation`, `nickname`, `city`, `state`, `year_founded`
 - Already writes to CSV using shared `write_csv()` helper
 
-#### 3. Game/Boxscore Data (`lib/game/boxscores.py`)
+#### 3. Player Career Stats (`lib/player/career_stats.py`)
+- Function: `career_stats(player_id, output_path=None)`
+- Fetches career statistics for a single player using `PlayerCareerStats` endpoint
+- Returns DataFrame with season-by-season statistics
+- Already writes to CSV using shared `write_csv()` helper
+
+#### 4. Game/Boxscore Data (`lib/game/boxscores.py`)
 - Function: `find_games_by_team_and_date()` - Uses LeagueGameFinder endpoint
 - Function: `find_games_by_date()` - Uses ScoreboardV2 endpoint  
 - Function: `get_box_score_traditional()` - Gets player stats for a specific game
 - Function: `get_complete_box_score()` - Combines multiple endpoints for comprehensive game data
+- Returns both player_stats and team_stats DataFrames
 
-#### 4. Helper Utilities
+#### 5. Helper Utilities
 - `lib/helpers/csv_helpers.py` - `write_csv()` for consistent CSV output
 - `lib/helpers/date_helpers.py` - `format_date_nba()` for date format conversion
 - `lib/helpers/team_helpers.py` - Team ID normalization
@@ -54,6 +64,8 @@ The project already has robust data fetching capabilities:
 2. **No automatic date range calculation** - User must manually specify "previous month" dates
 3. **No comprehensive game collection** - Need to fetch games across all teams for a date range
 4. **No player boxscore aggregation** - Need to collect player stats for all games found
+5. **No team boxscore aggregation** - Need to collect team stats for all games found
+6. **No bulk player career stats fetching** - Need to fetch career stats for all players
 
 ## Technical Approach
 
@@ -76,14 +88,22 @@ generate_seed_data.py
 ├── calculate_previous_month() → returns (start_date, end_date)
 ├── fetch_players_data() → writes players.csv
 ├── fetch_teams_data() → writes teams.csv
+├── fetch_player_career_stats_data() → writes player_career_stats.csv
+│   ├── Gets all players
+│   ├── For each player, fetches career stats
+│   └── Aggregates all career stats
 ├── fetch_games_data() → writes games.csv
-│   ├── Gets all teams
-│   ├── For each team, finds games in date range
+│   ├── Iterates through each day in date range
+│   ├── For each day, calls find_games_by_date()
 │   └── Deduplicates and aggregates all games
-└── fetch_boxscores_data() → writes boxscores.csv
+├── fetch_player_boxscores_data() → writes player_boxscores.csv
+│   ├── Uses game IDs from games.csv
+│   ├── For each game, fetches player boxscores
+│   └── Aggregates all player stats
+└── fetch_team_boxscores_data() → writes team_boxscores.csv
     ├── Uses game IDs from games.csv
-    ├── For each game, fetches player boxscores
-    └── Aggregates all player stats
+    ├── For each game, fetches team boxscores
+    └── Aggregates all team stats
 
 main()
 ├── Parse CLI arguments
@@ -133,81 +153,173 @@ def calculate_previous_month():
 - No additional processing needed
 
 #### 2. Games Collection (Complex)
-**Challenge:** Need games from all teams without duplication
+**Challenge:** Need all games in a date range without duplication
 
-**Solution:**
+**Solution (Preferred):**
 ```python
+from datetime import datetime, timedelta
+
 def fetch_games_data(date_from, date_to, output_path):
     """
-    Fetch all games in the date range.
+    Fetch all games in the date range by iterating through each day.
     
     Strategy:
-    1. Get all teams using lib.team.all()
-    2. For each team, use find_games_by_team_and_date()
+    1. Parse start and end dates
+    2. For each day in the range, use find_games_by_date()
     3. Collect all game records
-    4. Deduplicate by GAME_ID (games appear twice, once per team)
+    4. Deduplicate by GAME_ID (just in case)
     5. Write unique games to CSV
     """
-    # Get all teams
-    teams_df = teams.get_teams()
+    start_date = datetime.strptime(date_from, '%Y-%m-%d')
+    end_date = datetime.strptime(date_to, '%Y-%m-%d')
     
     all_games = []
-    for team in teams_df.itertuples():
-        # Find games for this team
-        games_df = find_games_by_team_and_date(
-            team.id, 
-            date_from, 
-            date_to
-        )
-        all_games.append(games_df)
-        time.sleep(0.6)  # Rate limiting
+    current_date = start_date
+    
+    while current_date <= end_date:
+        date_str = current_date.strftime('%Y-%m-%d')
+        print(f"Fetching games for {date_str}...")
+        
+        # Find games for this date
+        games_df = find_games_by_date(date_str)
+        if not games_df.empty:
+            all_games.append(games_df)
+        
+        time.sleep(0.5)  # Rate limiting between requests
+        current_date += timedelta(days=1)
     
     # Combine and deduplicate
-    combined = pd.concat(all_games, ignore_index=True)
-    unique_games = combined.drop_duplicates(subset=['GAME_ID'])
+    if all_games:
+        combined = pd.concat(all_games, ignore_index=True)
+        unique_games = combined.drop_duplicates(subset=['GAME_ID'])
+        write_csv(unique_games, output_path)
+        return unique_games
     
-    write_csv(unique_games, output_path)
-    return unique_games
+    return pd.DataFrame()
 ```
 
-**Alternative (More Efficient):**
-Use `find_games_by_date()` for each day in the range, which is more efficient but requires iterating through dates.
+This approach is more efficient than iterating through teams because:
+- Games are only returned once per day (not once per team)
+- Fewer API calls overall (number of days vs number of teams × games per team)
+- Natural deduplication by date
 
-#### 3. Boxscore Collection (Complex)
+#### 3. Player Boxscore Collection (Complex)
 **Challenge:** Need player boxscores for all games found
 
 **Solution:**
 ```python
-def fetch_boxscores_data(games_df, output_path):
+def fetch_player_boxscores_data(games_df, output_path):
     """
     Fetch player boxscores for all games.
     
     Args:
         games_df: DataFrame with GAME_ID column
-        output_path: Path for boxscores CSV
+        output_path: Path for player boxscores CSV
     """
     all_boxscores = []
+    total_games = len(games_df['GAME_ID'].unique())
     
-    for game_id in games_df['GAME_ID'].unique():
+    for i, game_id in enumerate(games_df['GAME_ID'].unique(), 1):
+        print(f"Fetching player boxscores: {i}/{total_games} games")
         result = get_box_score_traditional(game_id)
         if not result['player_stats'].empty:
             all_boxscores.append(result['player_stats'])
-        time.sleep(0.6)  # Rate limiting
+        time.sleep(0.5)  # Rate limiting
     
     # Combine all boxscores
-    combined = pd.concat(all_boxscores, ignore_index=True)
-    write_csv(combined, output_path)
-    return combined
+    if all_boxscores:
+        combined = pd.concat(all_boxscores, ignore_index=True)
+        write_csv(combined, output_path)
+        return combined
+    
+    return pd.DataFrame()
+```
+
+#### 4. Team Boxscore Collection (Complex)
+**Challenge:** Need team stats for all games found
+
+**Solution:**
+```python
+def fetch_team_boxscores_data(games_df, output_path):
+    """
+    Fetch team boxscores for all games.
+    
+    Args:
+        games_df: DataFrame with GAME_ID column
+        output_path: Path for team boxscores CSV
+    """
+    all_team_stats = []
+    total_games = len(games_df['GAME_ID'].unique())
+    
+    for i, game_id in enumerate(games_df['GAME_ID'].unique(), 1):
+        print(f"Fetching team boxscores: {i}/{total_games} games")
+        result = get_box_score_traditional(game_id)
+        if not result['team_stats'].empty:
+            all_team_stats.append(result['team_stats'])
+        time.sleep(0.5)  # Rate limiting (can reuse same call as player boxscores)
+    
+    # Combine all team stats
+    if all_team_stats:
+        combined = pd.concat(all_team_stats, ignore_index=True)
+        write_csv(combined, output_path)
+        return combined
+    
+    return pd.DataFrame()
+```
+
+#### 5. Player Career Stats Collection (Complex)
+**Challenge:** Need career stats for all players
+
+**Solution:**
+```python
+def fetch_player_career_stats_data(output_path):
+    """
+    Fetch career stats for all players.
+    
+    Strategy:
+    1. Get all players using lib.player.all()
+    2. For each player, fetch career stats
+    3. Aggregate all career records
+    4. Write to CSV
+    """
+    # Get all players
+    players_df = players.get_players()
+    all_career_stats = []
+    total_players = len(players_df)
+    
+    for i, player in enumerate(players_df.itertuples(), 1):
+        if i % 100 == 0:  # Progress every 100 players
+            print(f"Fetching career stats: {i}/{total_players} players")
+        
+        try:
+            career_df = _fetch_career_stats(player.id)
+            if not career_df.empty:
+                all_career_stats.append(career_df)
+        except Exception as e:
+            # Skip players with no stats (e.g., very old players)
+            continue
+        
+        time.sleep(0.5)  # Rate limiting
+    
+    # Combine all career stats
+    if all_career_stats:
+        combined = pd.concat(all_career_stats, ignore_index=True)
+        write_csv(combined, output_path)
+        return combined
+    
+    return pd.DataFrame()
 ```
 
 ### Output File Structure
 
 ```
 data/seed/
-├── players.csv          # All players
-├── teams.csv            # All teams
-├── games.csv            # All games from previous month
-└── boxscores.csv        # Player boxscores for those games
+├── players.csv               # All players
+├── teams.csv                 # All teams
+├── player_career_stats.csv   # Career stats for all players
+├── games.csv                 # All games from previous month
+├── player_boxscores.csv      # Player boxscores for those games
+└── team_boxscores.csv        # Team boxscores for those games
 ```
 
 #### CSV Schemas
@@ -226,17 +338,31 @@ id,full_name,abbreviation,nickname,city,state,year_founded
 ...
 ```
 
-**games.csv:**
+**player_career_stats.csv:**
 ```
-GAME_ID,GAME_DATE,MATCHUP,WL,PTS,TEAM_ID,SEASON_ID,...
-0022300123,2024-01-15,LAL vs. BOS,W,110,1610612747,2023-24,...
+PLAYER_ID,SEASON_ID,LEAGUE_ID,TEAM_ID,TEAM_ABBREVIATION,PLAYER_AGE,GP,GS,MIN,FGM,FGA,...
+203999,2023-24,00,1610612743,DEN,28,79,79,34.6,9.7,16.5,...
 ...
 ```
 
-**boxscores.csv:**
+**games.csv:**
+```
+GAME_ID,GAME_DATE,HOME_TEAM_ID,VISITOR_TEAM_ID,GAME_STATUS_TEXT,...
+0022300123,2024-01-15,1610612747,1610612738,Final,...
+...
+```
+
+**player_boxscores.csv:**
 ```
 personId,playerName,teamTricode,points,reboundsTotal,assists,minutes,gameId,...
 203999,Nikola Jokic,DEN,27,12,8,36:24,0022300123,...
+...
+```
+
+**team_boxscores.csv:**
+```
+teamId,teamName,teamCity,teamTricode,points,reboundsTotal,assists,fieldGoalsPercentage,...
+1610612743,Nuggets,Denver,DEN,115,48,28,0.487,...
 ...
 ```
 
@@ -257,8 +383,10 @@ personId,playerName,teamTricode,points,reboundsTotal,assists,minutes,gameId,...
 ### Phase 3: Data Fetching Functions
 1. Implement `fetch_players_data()` - wrapper for `lib.player.all()`
 2. Implement `fetch_teams_data()` - wrapper for `lib.team.all()`
-3. Implement `fetch_games_data()` - uses LeagueGameFinder or ScoreboardV2
-4. Implement `fetch_boxscores_data()` - fetches player stats for all games
+3. Implement `fetch_player_career_stats_data()` - fetches career stats for all players
+4. Implement `fetch_games_data()` - iterates through each day using `find_games_by_date()`
+5. Implement `fetch_player_boxscores_data()` - fetches player stats for all games
+6. Implement `fetch_team_boxscores_data()` - fetches team stats for all games
 
 ### Phase 4: Error Handling & Robustness
 1. Add try-except blocks for API failures
@@ -291,12 +419,29 @@ python scripts/generate_seed_data.py
 # Fetching teams data...
 # ✓ Wrote 30 teams to data/seed/teams.csv
 # 
+# Fetching player career stats...
+# Fetching career stats: 100/4800 players
+# Fetching career stats: 200/4800 players
+# ...
+# ✓ Wrote 45,000 career stat records to data/seed/player_career_stats.csv
+# 
 # Fetching games data (2024-11-01 to 2024-11-30)...
+# Fetching games for 2024-11-01...
+# Fetching games for 2024-11-02...
+# ...
 # ✓ Wrote 450 games to data/seed/games.csv
 # 
-# Fetching boxscores data for 450 games...
-# Progress: 450/450 games processed
-# ✓ Wrote 6,750 player boxscores to data/seed/boxscores.csv
+# Fetching player boxscores for 450 games...
+# Fetching player boxscores: 100/450 games
+# Fetching player boxscores: 200/450 games
+# ...
+# ✓ Wrote 6,750 player boxscores to data/seed/player_boxscores.csv
+# 
+# Fetching team boxscores for 450 games...
+# Fetching team boxscores: 100/450 games
+# Fetching team boxscores: 200/450 games
+# ...
+# ✓ Wrote 900 team boxscores to data/seed/team_boxscores.csv
 # 
 # Seed data generation complete!
 ```
@@ -323,16 +468,18 @@ python main.py seed-data --output-dir data/seed
 
 The NBA API has rate limiting. Best practices:
 
-1. **Sleep between requests:** Add 0.6-second delay between API calls
+1. **Sleep between requests:** Add 0.5-second delay between API calls (based on existing patterns in `lib/game/boxscores.py` where `time.sleep(0.5)` is used)
 2. **Batch operations:** Process in chunks with longer delays between batches
 3. **Exponential backoff:** Retry failed requests with increasing delays
 4. **Progress indicators:** Show user that script is working (not frozen)
+
+**Note:** The 0.5-second delay is used consistently in the existing codebase (e.g., `lib/game/boxscores.py:418`) and has proven effective for avoiding rate limit issues while keeping execution time reasonable.
 
 Example implementation:
 ```python
 import time
 
-def fetch_with_rate_limit(fetch_func, items, delay=0.6):
+def fetch_with_rate_limit(fetch_func, items, delay=0.5):
     """Fetch data with rate limiting."""
     results = []
     total = len(items)
@@ -371,24 +518,25 @@ except RequestException as e:
 ```python
 if df.empty:
     print("Warning: No games found for this date range")
-    print("This may be normal if it's during the off-season")
     return pd.DataFrame()
 ```
 
 ### 3. Partial Success
 ```python
-# Continue processing even if some teams fail
-failed_teams = []
-for team in teams:
+# Continue processing even if some items fail
+failed_items = []
+for i, item in enumerate(items, 1):
     try:
-        games = fetch_games(team)
+        result = fetch_data(item)
+        print(f"Progress: {i}/{len(items)} - Processing {item.name} (ID: {item.id})")
     except Exception as e:
-        print(f"Failed to fetch games for {team}: {e}")
-        failed_teams.append(team)
+        print(f"Failed to fetch data for {item.name} (ID: {item.id}): {e}")
+        failed_items.append(item)
         continue
 
-if failed_teams:
-    print(f"\nWarning: Failed to fetch data for {len(failed_teams)} teams")
+if failed_items:
+    print(f"\nWarning: Failed to fetch data for {len(failed_items)} items")
+    print(f"Failed items: {', '.join([f'{item.name} ({item.id})' for item in failed_items])}")
 ```
 
 ## Dependencies
@@ -421,21 +569,24 @@ No new dependencies needed.
 
 1. ✅ Script successfully fetches all players
 2. ✅ Script successfully fetches all teams
-3. ✅ Script calculates previous month date range automatically
-4. ✅ Script fetches all games from the date range
-5. ✅ Script fetches player boxscores for all games
-6. ✅ All data written to well-formed CSV files
-7. ✅ CSV files are suitable for database import
-8. ✅ Script handles errors gracefully
-9. ✅ Script provides clear progress feedback
-10. ✅ Documentation is complete and clear
+3. ✅ Script successfully fetches player career stats for all players
+4. ✅ Script calculates previous month date range automatically
+5. ✅ Script fetches all games from the date range (using daily iteration)
+6. ✅ Script fetches player boxscores for all games
+7. ✅ Script fetches team boxscores for all games
+8. ✅ All data written to well-formed CSV files
+9. ✅ CSV files are suitable for database import
+10. ✅ Script handles errors gracefully
+11. ✅ Script provides clear progress feedback with counts and identifiers
+12. ✅ Documentation is complete and clear
 
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| API rate limiting causes failures | High | Implement delays, retry logic, exponential backoff |
-| Large date ranges cause timeouts | Medium | Provide progress indicators, allow resume functionality |
+| API rate limiting causes failures | High | Implement 0.5s delays (proven in existing code), retry logic, exponential backoff |
+| Large date ranges cause timeouts | Medium | Provide progress indicators with counts/names, allow resume functionality |
+| Fetching career stats for ~4800 players takes long time | High | Show progress every 100 players, use existing error handling, skip failed players |
 | Off-season has no games | Low | Handle empty results gracefully with informative messages |
 | Memory issues with large datasets | Medium | Process and write data in chunks if needed |
 | Network failures | Medium | Implement retry logic, save progress periodically |
@@ -454,17 +605,18 @@ No new dependencies needed.
 
 - **Phase 1 (Core Structure):** 30 minutes
 - **Phase 2 (Date Calculation):** 15 minutes  
-- **Phase 3 (Data Fetching):** 1 hour
-- **Phase 4 (Error Handling):** 30 minutes
+- **Phase 3 (Data Fetching):** 2 hours (increased due to additional data types)
+- **Phase 4 (Error Handling):** 45 minutes (increased for more complex scenarios)
 - **Phase 5 (CLI Integration):** 15 minutes
-- **Phase 6 (Testing):** 45 minutes
+- **Phase 6 (Testing):** 1 hour (increased for additional data types)
 
-**Total Estimated Time:** ~3.5 hours
+**Total Estimated Time:** ~5 hours
 
 ## References
 
 - Existing player fetching: `lib/player/all.py`
 - Existing team fetching: `lib/team/all.py`
+- Existing player career stats: `lib/player/career_stats.py`
 - Game finding utilities: `lib/game/boxscores.py`
 - Data model documentation: `docs/data_model.md`
 - CLI structure: `lib/cli.py`
@@ -474,16 +626,17 @@ No new dependencies needed.
 
 ## Approval
 
-This plan provides a comprehensive blueprint for implementing the seed data generation script. It leverages existing functionality, follows project conventions, and addresses the core requirement of generating CSV files for database import.
+This plan provides a comprehensive blueprint for implementing the seed data generation script. It leverages existing functionality, follows project conventions, and addresses the expanded requirements including player career stats and team boxscores.
+
+**Updated Requirements Addressed:**
+1. ✅ Fetch games using daily iteration with `find_games_by_date()` (more efficient)
+2. ✅ Include team stats per game (team boxscores)
+3. ✅ Include career stats for all players
+4. ✅ Use 0.5-second delays consistent with existing codebase
+5. ✅ Provide detailed progress feedback with names/IDs
 
 **Next Steps:**
 1. Review and approve this plan
 2. Proceed to implementation in phases
 3. Test with real NBA data
 4. Update documentation
-
-**Questions for Clarification:**
-1. Should we prioritize efficiency (fetch by date) or simplicity (fetch by team)?
-2. Do you want the script to run as a one-time operation or support incremental updates?
-3. Should we include advanced stats or stick to traditional boxscores?
-4. What should happen if the previous month had no games (off-season)?
